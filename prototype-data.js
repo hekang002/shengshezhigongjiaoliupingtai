@@ -1,0 +1,494 @@
+(function () {
+  const key = 'hubei-voice-prototype-v1';
+  const demoWords = [
+    '涉密文件原件', '内部会议纪要全文', '未公开干部任免名单', '未公开项目底价', '招标评审专家名单',
+    '财政专户密码', '单位账户密码', '后台管理口令', '验证码转发给我', '身份证号码及住址',
+    '职工完整身份证号', '个人银行卡号及密码', '人事档案扫描件', '未经授权公开通讯录', '保密协议全文',
+    '虚开发票套现', '公款私存', '违规收受礼金', '代写虚假验收报告', '绕过招标程序', '擅自披露考核结果'
+  ].map((term, index) => ({ id: `word-agency-demo-${index + 1}`, term, scope: '全部', matchRule: '包含匹配', enabled: true, hitCount: 0 })).filter((rule) => rule.id !== 'word-agency-demo-3');
+  const demoCommentTerms = ['内部会议纪要全文', '未公开项目底价', '招标评审专家名单', '财政专户密码', '单位账户密码', '后台管理口令', '验证码转发给我', '身份证号码及住址'];
+  const demoComments = [
+    ['不如把内部会议纪要全文直接发出来，大家查看更方便。', '刘畅', '合作指导处', '待审核'],
+    ['建议公布未公开项目底价，基层单位才能准确参考。', '赵颖', '机关服务中心', '待审核'],
+    ['谁有招标评审专家名单，可以在评论区共享一下。', '黄晨', '经济发展处', '待审核'],
+    ['财政专户密码可以统一登记在共享表里。', '吴桐', '信息中心', '待审核'],
+    ['把单位账户密码发给经办人就能快速处理。', '陈峰', '武汉市供销合作总社', '待审核'],
+    ['后台管理口令是否还是上次培训时设置的那一个？', '李雯', '办公室', '待审核'],
+    ['系统登录不了，请把验证码转发给我协助排查。', '王可', '荆州市供销合作社', '待审核'],
+    ['建议把身份证号码及住址一并放进联系人清单。', '周扬', '省供销集团', '待审核'],
+    ['支持建立跨单位信息共享机制。', '孙悦', '合作指导处', '已发布'],
+    ['晚餐供应时间可以结合实际人数动态调整。', '郑航', '机关服务中心', '已发布'],
+    ['经验总结清晰，便于项目验收参考。', '蒋欣', '经济发展处', '已发布'],
+    ['建议同时明确数据更新责任人。', '冯宇', '信息中心', '已发布'],
+    ['基层单位需要更便捷的反馈渠道。', '许宁', '办公室', '已发布'],
+    ['建议按地区和品类提供筛选功能。', '郭睿', '武汉市供销合作总社', '已发布'],
+    ['希望后续公布实施进度。', '何静', '荆州市供销合作社', '已发布'],
+    ['建议形成常态化更新机制。', '唐杰', '省供销集团', '已发布'],
+    ['重复刷屏内容，请管理员删除。', '匿名用户', '省社机关', '已驳回'],
+    ['该评论包含无关推广信息。', '匿名用户', '直属企业', '已驳回'],
+    ['与原帖主题无关的情绪表达。', '匿名用户', '市州供销社', '已驳回'],
+    ['包含不文明用语的演示评论。', '匿名用户', '省社机关', '已驳回']
+  ].map(([text, author, department, status], index) => ({ id: `PL-DEMO-${String(index + 1).padStart(3, '0')}`, postId: index % 4 === 0 ? 15 : index % 3 + 1, author, department, text, createdAt: `2026-09-${String(13 - Math.floor(index / 5)).padStart(2, '0')} ${String(9 + index % 8).padStart(2, '0')}:20`, status, risk: index < 8 ? '敏感词命中' : '低风险', sensitiveHits: index < 8 ? [demoCommentTerms[index]] : [], reviewReason: status === '已驳回' ? '内容与主题无关或不符合评论规范' : '', reviewedAt: status === '待审核' ? '' : '2026-09-14 09:00' }));
+  const demoReports = [
+    '疑似公开个人联系方式，请核对是否取得本人授权。', '内容中可能包含尚未公开的项目数据。', '评论存在不文明表达，影响正常交流。', '帖子疑似重复发布，请核查是否需要合并。',
+    '内容与事实不符，建议联系相关部门核实。', '疑似包含广告推广信息。', '匿名发帖可能涉及对个人的不实评价。', '帖子中引用的政策文件版本可能已经失效。',
+    '疑似泄露内部会议材料。', '评论区出现联系方式引流信息。', '内容可能侵犯他人隐私。', '标题与正文不一致，疑似误导。',
+    '帖子包含未经证实的项目进度信息。', '疑似冒用他人身份发布内容。', '内容存在重复刷屏情况。', '举报该帖可能包含敏感业务数据。',
+    '评论带有明显营销性质。', '内容引用来源不明确，请核查真实性。', '疑似恶意攻击其他用户。', '帖子可能违反平台信息发布规范。'
+  ].map((reason, index) => ({ id: `JB-DEMO-${String(index + 1).padStart(3, '0')}`, postId: index % 4 === 0 ? 15 : index % 3 + 1, reason, status: index < 12 ? '待核查' : '已处理', resolution: index < 12 ? '' : index % 2 ? '举报不成立' : '举报成立', reviewReason: index < 12 ? '' : index % 2 ? '经核对，原内容未违反平台规范。' : '经核对，内容存在违规信息，已记录处置。', reviewedAt: index < 12 ? '' : '2026-09-14 10:30' }));
+  const reviewBodyByTerm = {
+    '内部会议纪要全文': '近期各处室通过工作群传阅会议材料的情况较多，建议明确可公开、内部传阅和限制传阅三个层级，并在文件首页标注范围。个别同事提出直接上传内部会议纪要全文供基层单位参考，建议平台先核对材料密级和公开边界，再决定是否发布。',
+    '未公开项目底价': '基层社在准备冷链设施采购时，希望参考同类项目的预算构成和设备参数。目前项目仍处于采购论证阶段，材料中涉及未公开项目底价，建议由项目主管部门确认可公开范围后，整理成不含具体价格的经验指引。',
+    '招标评审专家名单': '建议建立农业社会化服务项目采购常见问题库，公开资格条件、评审流程和结果查询渠道。原稿附带招标评审专家名单，可能影响评审独立性，建议删除人员信息后再分享流程经验。',
+    '财政专户密码': '部分基层单位反映财政资金专户交接缺少统一清单，人员调整时容易遗漏网银权限和印鉴资料。帖子中出现财政专户密码等高敏感信息，建议立即转人工核查，并将内容改为账户交接制度和双人复核要求。',
+    '单位账户密码': '社有企业开展月度资金盘点时，需要核对银行账户、U盾保管人和审批链路。为说明问题，原文填写了单位账户密码，这类信息不应在交流平台流转，建议仅保留风险描述和整改建议。',
+    '后台管理口令': '县域流通信息系统近期完成升级，部分网点反馈账号权限没有同步调整。帖子列出了后台管理口令用于说明登录问题，应删除具体口令，并由信息中心通过工单渠道处理账号权限。',
+    '验证码转发给我': '近期有职工收到冒充技术人员的短信，要求回复“验证码转发给我”以协助系统升级。建议平台发布防诈骗提醒，明确任何管理员都不会索取短信验证码，并提供异常情况上报渠道。',
+    '身份证号码及住址': '职工申请培训补贴时，希望一次提交材料并在后续环节复用。现有说明要求上传身份证号码及住址，建议按照最小必要原则重新梳理字段，对确需收集的信息加密保存并限制查询权限。',
+    '个人银行卡号及密码': '部分单位在登记慰问金发放信息时，仍通过普通表格汇总个人银行卡号及密码。建议统一使用财务系统采集必要的收款账户信息，严禁收集银行卡密码，并对历史表格及时清理。',
+    '人事档案扫描件': '跨单位调动过程中，人事材料需要在组织人事部门之间规范流转。有人建议将人事档案扫描件上传到交流平台便于下载，此方式存在隐私风险，建议改用专门的人事档案系统并设置审批和水印。',
+    '未经授权公开通讯录': '基层网点希望获得业务联系人清单，以便及时咨询农资供应和项目申报问题。当前附件属于未经授权公开通讯录，建议由各部门确认对外联系人，只公布办公电话和工作邮箱。',
+    '保密协议全文': '建议为新入职职工增加信息安全培训，结合典型案例说明资料使用边界。原帖引用了保密协议全文，其中部分条款不适合公开，建议改为提炼注意事项并链接正式制度查询入口。',
+    '代写虚假验收报告': '冷链项目验收应以合同、现场记录、设备运行数据和影像资料为依据。近期有人在群内宣传代写虚假验收报告，建议各单位加强材料真实性核验，对异常服务信息及时报告。',
+    '绕过招标程序': '部分基层项目工期紧，存在先实施后补手续的倾向，甚至提出绕过招标程序。建议经济发展和财务部门联合发布采购流程指引，明确紧急采购适用条件、审批权限和留痕要求。',
+    '虚开发票套现': '社有企业费用报销检查中发现，个别宣传信息包含虚开发票套现等违法内容。建议加强票据真伪核验和公务卡数据比对，同时公布合规咨询和问题举报渠道。',
+    '擅自披露考核结果': '年度考核结束后，职工希望及时了解结果查询和申诉流程。讨论中涉及擅自披露考核结果的具体情形，建议由人事部门统一发布查询规则，避免传播未经确认的个人评价信息。',
+    '未公开干部任免名单': '基层单位希望提前了解干部调整后的业务对接安排，但帖子包含未公开干部任免名单。建议等待正式文件发布后，再同步岗位职责和办公联系方式，不传播个人任免传闻。',
+    '涉密文件原件': '为提高项目申报效率，有人建议把历年申报材料打包上传供各单位参考，其中包含涉密文件原件。建议先由资料归口部门完成审查、脱敏和版本清理，只发布可公开的模板与填报说明。',
+    '违规收受礼金': '建议结合节假日前监督提醒，说明社有企业商务往来、礼品登记和廉洁纪律要求。帖子引用了违规收受礼金的具体案例，涉及人员和调查细节，应删除身份信息后再作为警示教育材料使用。'
+  };
+  const demoReviewPosts = [
+    ['关于规范内部会议材料传阅范围的建议', '业务交流', '楚风同行', '内部会议纪要全文'],
+    ['基层项目招标信息公开边界咨询', '心声诉求', '江汉新声', '未公开项目底价'],
+    ['建议加强评审专家信息保护', '建言献策', '供销观察员', '招标评审专家名单'],
+    ['财务专户安全管理问题反馈', '心声诉求', '田野微光', '财政专户密码'],
+    ['关于单位账号安全培训的建议', '建言献策', '荆楚行者', '单位账户密码'],
+    ['后台系统口令管理经验交流', '业务交流', '云端稻香', '后台管理口令'],
+    ['短信验证码安全提醒建议', '建言献策', '清风徐来', '验证码转发给我'],
+    ['职工身份资料收集范围咨询', '心声诉求', '湖畔听雨', '身份证号码及住址'],
+    ['建议规范银行卡信息登记流程', '建言献策', '山川有信', '个人银行卡号及密码'],
+    ['人事档案线上流转安全建议', '业务交流', '晨光同行', '人事档案扫描件'],
+    ['通讯录公开范围需要进一步明确', '心声诉求', '基层之声', '未经授权公开通讯录'],
+    ['建议明确保密材料引用规范', '建言献策', '楚天新语', '保密协议全文'],
+    ['关于项目验收材料真实性的提醒', '业务交流', '实干先锋', '代写虚假验收报告'],
+    ['采购流程合规问题咨询', '心声诉求', '长江之声', '绕过招标程序'],
+    ['建议加强财务票据合规教育', '建言献策', '供销青年', '虚开发票套现'],
+    ['考核结果发布范围咨询', '心声诉求', '匿名用户', '擅自披露考核结果'],
+    ['干部任免信息发布规范建议', '建言献策', '江城行者', '未公开干部任免名单'],
+    ['单位内部资料外发审批建议', '业务交流', '合作之声', '涉密文件原件'],
+    ['关于礼金登记和监督机制的建议', '心声诉求', '廉洁同行', '违规收受礼金']
+  ].map(([title, board, author, term], index) => ({ id: `POST-DEMO-${String(index + 1).padStart(3, '0')}`, title, board, author, status: index < 12 ? '待审核' : index < 16 ? '已发布' : index < 18 ? '退回修改' : '已驳回', risk: '敏感词命中', sensitiveHits: [term], body: reviewBodyByTerm[term], time: `09月${String(13 - Math.floor(index / 5)).padStart(2, '0')}日 ${String(8 + index % 9).padStart(2, '0')}:15` }));
+  const emptyEngagement = () => ({
+    views: 0,
+    uniqueViews: 0,
+    uniqueViewAccounts: [],
+    likes: 0,
+    favorites: 0,
+    shares: 0,
+    historicComments: 0,
+    likeUsers: [],
+    favoriteUsers: [],
+    shareChannels: { copy: 0, internal: 0, system: 0 },
+    daily: []
+  });
+  const engagementSeeds = {
+    1: { views: 326, uniqueViews: 248, likes: 42, favorites: 16, shares: 9, historicComments: 18 },
+    2: { views: 241, uniqueViews: 190, likes: 27, favorites: 9, shares: 5, historicComments: 9 },
+    3: { views: 518, uniqueViews: 401, likes: 65, favorites: 34, shares: 14, historicComments: 22 },
+    15: { views: 116, uniqueViews: 93, likes: 8, favorites: 3, shares: 1, historicComments: 2 }
+  };
+  function seededEngagement(postId) {
+    const seed = engagementSeeds[postId];
+    if (!seed) return emptyEngagement();
+    const recentUsers = [
+      { accountId: 'demo-liu', name: '刘芳', department: '合作指导处', at: '2026-09-13 16:42' },
+      { accountId: 'demo-zhou', name: '周凯', department: '信息中心', at: '2026-09-13 15:18' },
+      { accountId: 'demo-wu', name: '吴静', department: '经济发展处', at: '2026-09-12 10:36' }
+    ];
+    return {
+      ...emptyEngagement(),
+      ...seed,
+      likeUsers: recentUsers.map((item) => ({ ...item })),
+      favoriteUsers: recentUsers.slice(0, 2).map((item) => ({ ...item, at: '2026-09-12 09:20' })),
+      shareChannels: (() => {
+        const copy = Math.max(0, seed.shares - 4);
+        const internal = Math.min(3, seed.shares - copy);
+        return { copy, internal, system: Math.max(0, seed.shares - copy - internal) };
+      })(),
+      daily: [
+        { date: '2026-09-10', views: Math.round(seed.views * .24), likes: Math.round(seed.likes * .2), comments: Math.round(seed.historicComments * .2), favorites: Math.round(seed.favorites * .2), shares: Math.round(seed.shares * .2) },
+        { date: '2026-09-11', views: Math.round(seed.views * .31), likes: Math.round(seed.likes * .3), comments: Math.round(seed.historicComments * .3), favorites: Math.round(seed.favorites * .3), shares: Math.round(seed.shares * .3) },
+        { date: '2026-09-12', views: Math.round(seed.views * .27), likes: Math.round(seed.likes * .28), comments: Math.round(seed.historicComments * .28), favorites: Math.round(seed.favorites * .28), shares: Math.round(seed.shares * .28) },
+        { date: '2026-09-13', views: Math.round(seed.views * .18), likes: Math.round(seed.likes * .22), comments: Math.round(seed.historicComments * .22), favorites: Math.round(seed.favorites * .22), shares: Math.round(seed.shares * .22) }
+      ]
+    };
+  }
+  function ensureEngagement(post) {
+    const source = post.engagement || seededEngagement(post.id);
+    const fallback = emptyEngagement();
+    post.engagement = {
+      ...fallback,
+      ...source,
+      uniqueViewAccounts: Array.isArray(source.uniqueViewAccounts) ? source.uniqueViewAccounts : [],
+      likeUsers: Array.isArray(source.likeUsers) ? source.likeUsers : [],
+      favoriteUsers: Array.isArray(source.favoriteUsers) ? source.favoriteUsers : [],
+      shareChannels: { ...fallback.shareChannels, ...(source.shareChannels || {}) },
+      daily: Array.isArray(source.daily) ? source.daily : []
+    };
+    return post.engagement;
+  }
+  const mockPostTitles = [
+    '建议建立基层社项目申报材料共享专区', '关于优化职工培训报名流程的建议', '农产品品牌联合推广经验交流', '建议完善县域配送线路信息公示',
+    '关于增加青年职工业务交流活动的建议', '再生资源回收网点运营经验分享', '建议统一直属企业采购信息模板', '关于完善职工书屋借阅服务的建议',
+    '农业社会化服务项目台账整理方法', '建议开展基层网点数字化工具培训', '关于优化会议室预约流程的建议', '县域流通服务网络建设案例分享',
+    '建议建立跨部门政策答疑协作机制', '关于完善困难职工帮扶申请指引的建议', '冷链仓储日常安全检查经验交流', '建议增加供销品牌产品展示活动',
+    '关于优化差旅报销材料清单的建议', '基层社电商直播运营经验分享', '建议建立重点项目进度共享看板', '关于完善职工意见反馈闭环的建议'
+  ];
+  const mockPosts = mockPostTitles.map((title, index) => {
+    const board = ['建言献策', '心声诉求', '业务交流'][index % 3];
+    const status = board !== '业务交流' && index % 4 === 0 ? '私密发布' : '已发布';
+    return { id: `POST-CONTENT-${String(index + 1).padStart(3, '0')}`, title, board, author: ['楚天同行', '供销青年', '江城之声', '基层实践者'][index % 4], status, enabled: index !== 17, deleted: false, risk: index % 7 === 0 ? '需核验' : '低风险', body: `${title}，建议结合现有工作流程明确责任部门、办理节点和反馈方式，形成可查询、可跟踪的工作记录。`, time: `09月${String(13 - Math.floor(index / 4)).padStart(2, '0')}日 ${String(9 + index % 8).padStart(2, '0')}:20`, engagement: { ...emptyEngagement(), views: 86 + index * 17, uniqueViews: 62 + index * 13, likes: 6 + index * 2, favorites: 2 + index % 9, shares: 1 + index % 6, historicComments: 3 + index % 12 } };
+  });
+  const noticeTitles = ['中秋国庆期间值班安排通知', '全省供销系统业务培训报名通知', '职工健康体检时间安排', '网络安全宣传周活动通知', '农业社会化服务专题讲座通知', '直属单位财务人员培训通知', '机关办公区消防演练通知', '年度职工摄影作品征集通知', '县域流通服务体系交流会通知', '再生资源业务专题研讨通知', '青年理论学习小组活动通知', '供销品牌产品展示活动通知', '项目申报材料报送提醒', '职工书屋新书推荐活动通知', '档案管理专项检查通知', '数据安全自查工作通知', '基层社负责人座谈会通知', '冬季安全生产检查通知', '年度工作总结报送通知', '职工交流平台使用意见征集'];
+  const noticeAudience = { '全体职工': 2468, '省社本级': 386, '直属企业': 1280 };
+  const mockNotices = noticeTitles.map((title, index) => {
+    const scope = ['全体职工', '省社本级', '直属企业'][index % 3];
+    const targetCount = noticeAudience[scope];
+    return { id: `GG-MOCK-${String(index + 1).padStart(3, '0')}`, title, body: `${title}相关安排已确定，请各处室和直属单位按要求组织人员参加，并于规定时间前完成反馈。`, scope, status: '已发布', targetCount, successCount: Math.max(0, targetCount - index % 5), publishedAt: `2026-09-${String(14 - Math.floor(index / 2)).padStart(2, '0')} ${index % 2 ? '14:30' : '09:00'}` };
+  });
+  const policyTitles = ['农业社会化服务项目管理指引', '县域流通服务网络建设工作要点', '再生资源回收体系建设政策解读', '供销合作社项目资金管理规范', '直属企业采购管理操作指引', '基层社规范化建设评价办法', '农产品品牌培育工作指南', '冷链物流项目验收资料指引', '职工教育培训管理办法', '数据分类分级管理工作指引'];
+  const mockPolicies = policyTitles.map((title, index) => ({ id: `POLICY-MOCK-${String(index + 1).padStart(3, '0')}`, title, category: ['为农服务', '项目管理', '综合改革', '内部管理'][index % 4], department: ['合作指导处', '经济发展处', '财务资产处', '信息中心'][index % 4], summary: `${title}的适用范围、办理流程、材料要求和责任分工摘要。`, body: `${title}用于统一相关工作的办理口径，明确申请条件、工作流程、材料清单、审核要求和归档规范。`, status: '已发布', publishedAt: `2026-09-${String(12 - index).padStart(2, '0')}` }));
+  const questionTitles = ['基层社项目申报需要哪些前置条件？', '农业社会化服务台账应保留多久？', '跨部门共享数据需要履行什么程序？', '直属企业采购计划如何备案？', '职工培训报名后如何变更人员？', '冷链项目验收需准备哪些影像资料？', '供销品牌产品如何申请展示推荐？', '困难职工帮扶申请需要哪些证明？', '匿名发帖后平台是否可以查看身份？', '已公开答复存在错误如何申请更正？'];
+  const mockQuestions = questionTitles.map((title, index) => ({ id: `QUESTION-MOCK-${String(index + 1).padStart(3, '0')}`, title, category: ['项目申报', '业务办理', '数据管理', '平台使用'][index % 4], department: ['经济发展处', '合作指导处', '信息中心', '平台管理组'][index % 4], answer: index < 7 ? `关于“${title}”，请按照现行制度准备相关材料，经所属部门审核后通过规定流程提交，具体以最新通知为准。` : '', status: index < 7 ? '已发布' : '待答复', submittedAt: `2026-09-${String(13 - index).padStart(2, '0')}`, answeredAt: index < 7 ? `2026-09-${String(14 - index).padStart(2, '0')}` : '' }));
+  const echoTitles = ['关于基层项目申报材料共享建议的答复', '关于职工培训报名流程优化的答复', '关于农产品品牌联合推广建议的答复', '关于县域配送线路公示建议的答复', '关于青年职工交流活动建议的答复', '关于再生资源网点运营问题的答复', '关于采购信息模板统一建议的答复', '关于职工书屋服务建议的答复', '关于项目台账整理问题的答复', '关于数字化工具培训建议的答复', '关于会议室预约流程建议的答复', '关于县域流通网络建设问题的答复', '关于政策答疑协作机制建议的答复', '关于困难职工帮扶指引的答复', '关于冷链仓储安全检查问题的答复', '关于供销品牌展示活动建议的答复', '关于差旅报销材料清单的答复', '关于基层社电商运营问题的答复', '关于重点项目进度共享建议的答复', '关于职工意见反馈闭环建议的答复'];
+  const mockEchoPublications = echoTitles.map((title, index) => ({ id: `ECHO-MOCK-${String(index + 1).padStart(3, '0')}`, affairId: `SX-MOCK-${String(index + 1).padStart(3, '0')}`, sourcePostId: 1001 + index, title, body: `针对相关职工建议，责任部门已完成情况核实并形成改进措施。后续将按计划推进落实，并通过平台持续反馈办理进展。`, scope: ['全体职工', '省社本级', '直属企业'][index % 3], status: index % 7 === 6 ? '已撤回' : '已发布', publishedAt: `09月${String(14 - Math.floor(index / 3)).padStart(2, '0')}日 ${String(9 + index % 7).padStart(2, '0')}:10`, engagement: { ...emptyEngagement(), views: 120 + index * 19, uniqueViews: 90 + index * 14, likes: 8 + index * 2, favorites: 3 + index % 8, shares: 2 + index % 5, historicComments: 4 + index % 10 } }));
+  const bannerImages = [
+    'https://images.unsplash.com/photo-1464226184884-fa280b87c399?auto=format&fit=crop&w=1200&q=76',
+    'https://images.unsplash.com/photo-1500076656116-558758c991c1?auto=format&fit=crop&w=1200&q=76',
+    'https://images.unsplash.com/photo-1530507629858-e4977d30e9e8?auto=format&fit=crop&w=1200&q=76',
+    'https://images.unsplash.com/photo-1531058020387-3be344556be6?auto=format&fit=crop&w=1200&q=76',
+    'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1200&q=76'
+  ];
+  const mockBanners = Array.from({ length: 20 }, (_, index) => {
+    const type = ['post', 'notice', 'policy'][index % 3];
+    const targetId = type === 'post' ? mockPosts[index % 13].id : type === 'notice' ? mockNotices[index].id : mockPolicies[index % 8].id;
+    return { id: `BANNER-MOCK-${String(index + 1).padStart(3, '0')}`, title: ['为农服务工作动态', '职工通知及时知晓', '政策要点专题解读', '基层实践经验分享'][index % 4], summary: `聚焦全省供销系统重点工作与职工关切，展示第 ${index + 1} 期推荐内容。`, image: bannerImages[index % bannerImages.length], type, targetId, url: '', sort: index + 1, enabled: index % 6 !== 5, createdAt: `2026-09-${String(14 - Math.floor(index / 3)).padStart(2, '0')} 09:00` };
+  });
+  function appendUntil(collection, candidates, predicate, target = 20) {
+    for (const candidate of candidates) {
+      if (collection.filter(predicate).length >= target) break;
+      if (!collection.some((item) => String(item.id) === String(candidate.id))) collection.push({ ...candidate });
+    }
+  }
+  const initial = () => ({
+    posts: [
+      { id: 1, title: '建议建立农产品产销信息跨单位共享机制', board: '建言献策', author: '山野微风', status: '已发布', risk: '低风险', body: '建议由合作指导处牵头建立按周更新的农产品供需清单，统一品类、数量、交付区域和有效期。', time: '09月11日 09:24' },
+      { id: 2, title: '关于优化机关食堂晚餐供应时段的建议', board: '心声诉求', author: '一盏清茶', status: '已发布', risk: '需核验', body: '希望结合实际用餐数据适当调整晚餐时段。', time: '09月11日 08:47' },
+      { id: 3, title: '县域冷链项目验收资料整理经验分享', board: '业务交流', author: '江城行者', status: '已发布', risk: '低风险', sensitiveHits: [], body: '分享县域冷链项目验收材料目录和常见退回原因。', time: '09月10日 11:06' },
+      { id: 15, title: '关于基层网点联系方式展示的意见', board: '心声诉求', author: '匿名用户', status: '待审核', risk: '个人信息', sensitiveHits: ['个人信息'], body: '建议完善基层网点联系方式展示规则，并注意保护个人信息。', time: '09月10日 09:10' },
+      ...demoReviewPosts,
+      ...mockPosts.slice(0, 13)
+    ].map((post) => ({ ...post, enabled: true, deleted: false, engagement: seededEngagement(post.id) })),
+    affairs: [
+      { id: 'SX-202609-079', postId: 2, title: '关于优化机关食堂晚餐供应时段的建议', owner: '办公室', co: '机关服务中心', deadline: '2026-09-18', priority: '一般', feedback: '公开答复', status: '办理中', stage: '调查核实', requirements: '核实晚餐实际用餐量并提出调整方案。', progress: '正在结合用餐数据研究调整方案', draft: '', extension: null, events: [{ text: '已分办至办公室', at: '09月11日 10:12' }] }
+    ],
+    comments: demoComments.map((item) => ({ ...item })), reports: demoReports.map((item) => ({ ...item })), notices: mockNotices.map((item) => ({ ...item })), banners: mockBanners.map((item) => ({ ...item })), rectifications: [],
+    policies: [
+      { id: 'policy-admin-1', title: '湖北省供销合作社系统农业社会化服务工作指引', category: '为农服务', department: '合作指导处', summary: '明确服务主体、服务内容、项目实施和台账管理要求。', body: '围绕农业社会化服务项目实施，统一服务流程、质量要求和资料归档口径。', status: '已发布', publishedAt: '2026-09-08' },
+      { id: 'policy-admin-2', title: '基层社项目申报操作指引（2026 年版）', category: '项目申报', department: '经济发展处', summary: '梳理项目申报条件、材料清单、审核节点及反馈方式。', body: '申报单位应按年度通知准备申报表、实施方案、资金预算和必要证明材料。', status: '已发布', publishedAt: '2026-09-03' },
+      ...mockPolicies.slice(0, 8)
+    ],
+    questions: [
+      { id: 'question-admin-1', title: '基层社项目申报需要准备哪些材料？', category: '项目申报', department: '经济发展处', answer: '申报单位应提交项目申报表、实施方案、资金预算及必要的资质证明材料。', status: '已发布', submittedAt: '2026-09-07', answeredAt: '2026-09-08' },
+      { id: 'question-admin-2', title: '跨单位共享业务数据应履行什么手续？', category: '数据管理', department: '信息中心', answer: '', status: '待答复', submittedAt: '2026-09-12', answeredAt: '' },
+      ...mockQuestions.slice(0, 8)
+    ],
+    echoPublications: mockEchoPublications.map((item) => ({ ...item })),
+    accounts: [
+      { id: 'staff', phone: '13800002026', name: '张晓雨', department: '合作指导处', status: 'approved', role: 'staff', createdAt: '2026-09-10 09:00' },
+      { id: 'handler', phone: '13600002026', name: '陈凯', department: '经济发展处', status: 'approved', role: 'handler', createdAt: '2026-09-10 09:00' },
+      { id: 'handler-office', phone: '13600002027', name: '刘敏', department: '办公室', status: 'approved', role: 'handler', createdAt: '2026-09-14 09:00' },
+      { id: 'handler-cooperation', phone: '13600002028', name: '周磊', department: '合作指导处', status: 'approved', role: 'handler', createdAt: '2026-09-14 09:00' },
+      { id: 'admin', phone: '13500002026', name: '王敏', department: '平台管理组', status: 'approved', role: 'platform', createdAt: '2026-09-10 09:00' },
+      { id: 'leader', phone: '18800002026', name: '李建国', department: '省社机关', status: 'approved', role: 'leader', createdAt: '2026-09-10 09:00' },
+      { id: 'pending', phone: '13900002026', name: '周宁', department: '合作指导处', status: 'pending', role: 'staff', submitted: '2026-09-10 09:36', createdAt: '2026-09-10 09:36' },
+      { id: 'rejected', phone: '13700002026', name: '孙晨', department: '经济发展处', status: 'rejected', role: 'staff', submitted: '2026-09-09 14:18', createdAt: '2026-09-09 14:18' }
+    ], audit: [], loginLogs: [],
+    roles: [
+      { id: 'platform', name: '平台管理员', key: 'platform', scope: '全部数据', sort: 1, enabled: true, createdAt: '2026-09-10 09:00', fixed: true },
+      { id: 'content', name: '内容管理员', key: 'content', scope: '授权组织', sort: 2, enabled: true, createdAt: '2026-09-10 09:00', fixed: true },
+      { id: 'dispatch', name: '分办管理员', key: 'dispatch', scope: '授权组织', sort: 3, enabled: true, createdAt: '2026-09-10 09:00', fixed: true },
+      { id: 'handler', name: '承办负责人', key: 'handler', scope: '所属部门', sort: 4, enabled: true, createdAt: '2026-09-10 09:00', fixed: true },
+      { id: 'leader', name: '领导查看', key: 'leader', scope: '授权组织', sort: 5, enabled: true, createdAt: '2026-09-10 09:00', fixed: true }
+    ],
+    menus: [
+      { id: 'menu-dashboard', parentId: null, name: '工作总览', icon: 'layout-dashboard', sort: 1, type: '目录', permission: '', path: 'dashboard', enabled: true, visible: true, createdAt: '2026-09-10 09:00' },
+      { id: 'menu-audit', parentId: null, name: '审核管理', icon: 'user-round-check', sort: 2, type: '目录', permission: '', path: 'user-review', enabled: true, visible: true, createdAt: '2026-09-14 09:00' },
+      { id: 'menu-user-review', parentId: 'menu-audit', name: '用户审核', icon: 'user-round-check', sort: 1, type: '菜单', permission: 'user:review', path: 'user-review', enabled: true, visible: true, createdAt: '2026-09-14 09:00' },
+      { id: 'menu-comment', parentId: 'menu-audit', name: '信息发布审核', icon: 'shield-check', sort: 2, type: '菜单', permission: 'content:review', path: 'content-review', enabled: true, visible: true, createdAt: '2026-09-10 09:00' },
+      { id: 'menu-comment-review', parentId: 'menu-audit', name: '评论审核', icon: 'message-square', sort: 3, type: '菜单', permission: 'comment:review', path: 'comments', enabled: true, visible: true, createdAt: '2026-09-14 09:00' },
+      { id: 'menu-report-review', parentId: 'menu-audit', name: '举报核查', icon: 'flag-triangle-right', sort: 4, type: '菜单', permission: 'report:review', path: 'report-review', enabled: true, visible: true, createdAt: '2026-09-14 09:00' },
+      { id: 'menu-review', parentId: null, name: '内容管理', icon: 'files', sort: 3, type: '目录', permission: '', path: 'content-ledger', enabled: true, visible: true, createdAt: '2026-09-10 09:00' },
+      { id: 'menu-post', parentId: 'menu-review', name: '发帖信息台账管理', icon: 'notebook-tabs', sort: 1, type: '菜单', permission: 'content:ledger:view', path: 'content-ledger', enabled: true, visible: true, createdAt: '2026-09-10 09:00' },
+      { id: 'menu-announcements', parentId: 'menu-review', name: '通知公告管理', icon: 'megaphone', sort: 3, type: '菜单', permission: 'content:announcement', path: 'announcements', enabled: true, visible: true, createdAt: '2026-09-14 08:00' },
+      { id: 'menu-policy', parentId: 'menu-review', name: '政策与问答', icon: 'book-open-check', sort: 4, type: '菜单', permission: 'content:policy', path: 'policy', enabled: true, visible: true, createdAt: '2026-09-14 08:00' },
+      { id: 'menu-echo', parentId: 'menu-review', name: '回音壁发布', icon: 'badge-check', sort: 5, type: '菜单', permission: 'content:echo', path: 'echo', enabled: true, visible: true, createdAt: '2026-09-14 08:00' },
+      { id: 'menu-affairs', parentId: null, name: '事项办理', icon: 'clipboard-list', sort: 4, type: '目录', permission: '', path: 'assignments', enabled: true, visible: true, createdAt: '2026-09-10 09:00' },
+      { id: 'menu-assign', parentId: 'menu-affairs', name: '事项分办', icon: 'git-branch', sort: 1, type: '菜单', permission: 'affair:assign', path: 'assignments', enabled: true, visible: true, createdAt: '2026-09-10 09:00' },
+      { id: 'menu-settings', parentId: null, name: '系统设置', icon: 'settings-2', sort: 9, type: '目录', permission: '', path: 'settings', enabled: true, visible: true, createdAt: '2026-09-10 09:00' },
+      { id: 'menu-users', parentId: 'menu-settings', name: '用户管理', icon: 'users', sort: 1, type: '菜单', permission: 'system:user:view', path: 'users', enabled: true, visible: true, createdAt: '2026-09-10 09:00' },
+      { id: 'menu-dict', parentId: 'menu-settings', name: '字典管理', icon: 'book-open', sort: 2, type: '菜单', permission: 'system:dict:view', path: 'dictionary-management', enabled: true, visible: true, createdAt: '2026-09-10 09:00' }
+    ],
+    dictionaryTypes: [
+      { id: 'dict-auth', name: '登录方式', key: 'sys_login_method', note: '登录方式演示项', createdAt: '2026-09-10 09:00' },
+      { id: 'dict-affair', name: '事项优先级', key: 'affair_priority', note: '办理事项优先级', createdAt: '2026-09-10 09:00' },
+      { id: 'dict-status', name: '系统状态', key: 'sys_status', note: '基础状态展示', createdAt: '2026-09-10 09:00' }
+    ],
+    dictionaryEntries: [
+      { id: 'entry-password', typeId: 'dict-auth', label: '密码认证', value: 'password', sort: 1, note: '账号密码', createdAt: '2026-09-10 09:00' },
+      { id: 'entry-sms', typeId: 'dict-auth', label: '短信认证', value: 'sms', sort: 2, note: '演示验证码', createdAt: '2026-09-10 09:00' },
+      { id: 'entry-normal', typeId: 'dict-affair', label: '一般', value: 'normal', sort: 1, note: '', createdAt: '2026-09-10 09:00' },
+      { id: 'entry-important', typeId: 'dict-affair', label: '重点', value: 'important', sort: 2, note: '', createdAt: '2026-09-10 09:00' },
+      { id: 'entry-urgent', typeId: 'dict-affair', label: '紧急', value: 'urgent', sort: 3, note: '', createdAt: '2026-09-10 09:00' },
+      { id: 'entry-active', typeId: 'dict-status', label: '正常', value: 'active', sort: 1, note: '', createdAt: '2026-09-10 09:00' }
+    ],
+    boards: [
+      { id: 'board-ideas', name: '建言献策', sort: 1, enabled: true, staffPost: true },
+      { id: 'board-voices', name: '心声诉求', sort: 2, enabled: true, staffPost: true },
+      { id: 'board-exchange', name: '业务交流', sort: 3, enabled: true, staffPost: true },
+      { id: 'board-echo', name: '回音壁', sort: 4, enabled: true, staffPost: false }
+    ],
+    flowConfigs: ['建言献策', '心声诉求'].map((board) => ({
+      board, version: 1, published: { decision: '人工判断', contentRole: 'content', assignmentRole: 'dispatch', answerRole: 'dispatch', extensionRole: 'dispatch' }, draft: null, publishedAt: '2026-09-14 09:00'
+    })),
+    sensitiveWords: [{ id: 'word-demo', term: '测试禁词', scope: '全部', matchRule: '包含匹配', enabled: true, hitCount: 0 }, ...demoWords],
+    deletedSensitiveWordIds: [],
+    protectedLists: [{ id: 'list-demo-appointment', name: '未公开干部任免名单（虚构演示）', kind: '人事名单', scope: '全部', expires: '2026-12-31', enabled: true, hitCount: 0, entries: [{ name: '林知远', unit: '示范单位甲', position: '副主任' }, { name: '周明澈', unit: '示范单位乙', position: '处长' }] }],
+    organizations: [
+      { id: 'org-hubei', parentId: null, name: '湖北省供销合作总社', sort: 0, visible: true, status: '正常', createdAt: '2026-09-10 09:00' },
+      { id: 'org-office', parentId: 'org-hubei', name: '办公室', sort: 1, visible: true, status: '正常', createdAt: '2026-09-10 09:10' },
+      { id: 'org-cooperation', parentId: 'org-hubei', name: '合作指导处', sort: 2, visible: true, status: '正常', createdAt: '2026-09-10 09:12' },
+      { id: 'org-economy', parentId: 'org-hubei', name: '经济发展处', sort: 3, visible: true, status: '正常', createdAt: '2026-09-10 09:14' },
+      { id: 'org-information', parentId: 'org-hubei', name: '信息中心', sort: 4, visible: true, status: '正常', createdAt: '2026-09-10 09:16' },
+      { id: 'org-service', parentId: 'org-office', name: '机关服务中心', sort: 1, visible: true, status: '正常', createdAt: '2026-09-10 09:18' },
+      { id: 'org-enterprises', parentId: 'org-hubei', name: '直属企业', sort: 5, visible: true, status: '正常', createdAt: '2026-09-10 09:20' },
+      { id: 'org-supply', parentId: 'org-enterprises', name: '省供销集团', sort: 1, visible: true, status: '正常', createdAt: '2026-09-10 09:22' },
+      { id: 'org-cities', parentId: 'org-hubei', name: '市州供销社', sort: 6, visible: true, status: '正常', createdAt: '2026-09-10 09:24' },
+      { id: 'org-wuhan', parentId: 'org-cities', name: '武汉市供销合作总社', sort: 1, visible: true, status: '正常', createdAt: '2026-09-10 09:26' },
+      { id: 'org-jingzhou', parentId: 'org-cities', name: '荆州市供销合作社', sort: 2, visible: true, status: '正常', createdAt: '2026-09-10 09:28' }
+    ]
+  });
+  function read() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(key));
+      if (raw && Array.isArray(raw.posts) && Array.isArray(raw.affairs) && Array.isArray(raw.audit)) {
+        const defaults = initial();
+        if (!Array.isArray(raw.boards)) raw.boards = defaults.boards;
+        const wordsMissing = !Array.isArray(raw.sensitiveWords);
+        if (wordsMissing) raw.sensitiveWords = defaults.sensitiveWords;
+        let wordsChanged = wordsMissing;
+        if (!Array.isArray(raw.deletedSensitiveWordIds)) { raw.deletedSensitiveWordIds = []; wordsChanged = true; }
+        for (const rule of raw.sensitiveWords) {
+          if (!Number.isFinite(rule.hitCount)) { rule.hitCount = 0; wordsChanged = true; }
+          if (!rule.matchRule) { rule.matchRule = '包含匹配'; wordsChanged = true; }
+        }
+        for (const rule of demoWords) {
+          if (!raw.deletedSensitiveWordIds.includes(rule.id) && !raw.sensitiveWords.some((item) => item.id === rule.id || item.term === rule.term)) {
+            raw.sensitiveWords.push({ ...rule }); wordsChanged = true;
+          }
+        }
+        if (!Array.isArray(raw.protectedLists)) {
+          raw.protectedLists = defaults.protectedLists;
+          wordsChanged = true;
+        }
+        const obsolete = raw.sensitiveWords.findIndex((item) => item.id === 'word-agency-demo-3' && item.term === '未公开干部任免名单' && !item.hitCount);
+        if (obsolete >= 0) { raw.sensitiveWords.splice(obsolete, 1); wordsChanged = true; }
+        if (wordsChanged) localStorage.setItem(key, JSON.stringify(raw));
+        let dataChanged = false;
+        if (!Array.isArray(raw.banners)) { raw.banners = []; dataChanged = true; }
+        if (!Array.isArray(raw.comments)) { raw.comments = []; dataChanged = true; }
+        for (const comment of demoComments) {
+          if (raw.comments.length >= 20) break;
+          if (!raw.comments.some((item) => item.id === comment.id)) { raw.comments.push({ ...comment }); dataChanged = true; }
+        }
+        for (const expected of demoComments) {
+          const current = raw.comments.find((item) => item.id === expected.id);
+          if (current && (JSON.stringify(current.sensitiveHits || []) !== JSON.stringify(expected.sensitiveHits) || current.text !== expected.text)) { Object.assign(current, expected); dataChanged = true; }
+        }
+        if (!Array.isArray(raw.reports)) { raw.reports = []; dataChanged = true; }
+        for (const report of demoReports) {
+          if (raw.reports.length >= 20) break;
+          if (!raw.reports.some((item) => item.id === report.id)) { raw.reports.push({ ...report }); dataChanged = true; }
+        }
+        raw.boards.forEach((board, index) => {
+          if (!Number.isInteger(board.sort) || board.sort < 1) { board.sort = index + 1; dataChanged = true; }
+        });
+        for (const post of raw.posts) {
+          if (!Object.hasOwn(post, 'enabled')) { post.enabled = true; dataChanged = true; }
+          if (!Object.hasOwn(post, 'deleted')) { post.deleted = false; dataChanged = true; }
+          if (!Array.isArray(post.sensitiveHits) && post.risk === '个人信息') { post.sensitiveHits = ['个人信息']; dataChanged = true; }
+          if (post.status === '待审核' && post.risk === '低风险' && !post.protectedListId && !post.sensitiveHits?.length) { post.status = '已发布'; dataChanged = true; }
+          const before = JSON.stringify(post.engagement || null);
+          ensureEngagement(post);
+          if (JSON.stringify(post.engagement) !== before) dataChanged = true;
+        }
+        for (const post of demoReviewPosts) {
+          const current = raw.posts.find((item) => item.id === post.id);
+          if (current?.body?.startsWith('帖子正文用于演示')) { current.body = post.body; dataChanged = true; }
+        }
+        for (const post of demoReviewPosts) {
+          const reviewCount = raw.posts.filter((item) => item.sensitiveHits?.length || item.risk === '个人信息' || item.protectedListId).length;
+          if (reviewCount >= 20) break;
+          if (!raw.posts.some((item) => item.id === post.id)) { raw.posts.push({ ...post, enabled: true, deleted: false, engagement: seededEngagement(post.id) }); dataChanged = true; }
+        }
+        if (!Array.isArray(raw.organizations)) { raw.organizations = defaults.organizations; dataChanged = true; }
+        for (const expected of defaults.accounts.filter((account) => account.role === 'handler')) {
+          if (!raw.accounts.some((account) => account.id === expected.id)) { raw.accounts.push({ ...expected }); dataChanged = true; }
+        }
+        if (!Array.isArray(raw.flowConfigs)) { raw.flowConfigs = defaults.flowConfigs; dataChanged = true; }
+        for (const expected of defaults.flowConfigs) if (!raw.flowConfigs.some((item) => item.board === expected.board)) { raw.flowConfigs.push(expected); dataChanged = true; }
+        for (const post of raw.posts) {
+          const original = defaults.flowConfigs.find((item) => item.board === post.board);
+          if (original && !Object.hasOwn(post, 'flowSnapshot')) { post.flowSnapshot = { ...original.published, board: original.board, version: 1 }; dataChanged = true; }
+        }
+        for (const affair of raw.affairs) {
+          const post = raw.posts.find((item) => item.id === affair.postId);
+          if (post?.flowSnapshot && !affair.flowSnapshot) { affair.flowSnapshot = { ...post.flowSnapshot }; dataChanged = true; }
+          const currentHandler = raw.accounts.find((account) => account.role === 'handler' && account.status === 'approved' && account.department === affair.owner);
+          if (!affair.initialOwner) { affair.initialOwner = affair.owner; dataChanged = true; }
+          if (!affair.assignmentState) { affair.assignmentState = affair.status === '办理中' ? '已接收' : affair.status; dataChanged = true; }
+          if (!affair.assigneeId && currentHandler) { affair.assigneeId = currentHandler.id; dataChanged = true; }
+          if (!affair.assigneeName && currentHandler) { affair.assigneeName = currentHandler.name; dataChanged = true; }
+          if (!Object.hasOwn(affair, 'transfer')) { affair.transfer = null; dataChanged = true; }
+          if (!Array.isArray(affair.events)) { affair.events = []; dataChanged = true; }
+        }
+        for (const field of ['roles', 'menus', 'dictionaryTypes', 'dictionaryEntries', 'loginLogs', 'policies', 'questions', 'notices', 'banners', 'echoPublications']) if (!Array.isArray(raw[field])) { raw[field] = defaults[field]; dataChanged = true; }
+        const countsBefore = [raw.posts.length, raw.notices.length, raw.policies.length, raw.questions.length, raw.banners.length, raw.echoPublications.length].join(':');
+        appendUntil(raw.posts, mockPosts, (post) => post.deleted !== true && ['私密发布', '已发布', '已受理', '已隐藏'].includes(post.status));
+        appendUntil(raw.notices, mockNotices, () => true);
+        appendUntil(raw.policies, mockPolicies, () => true, 10);
+        appendUntil(raw.questions, mockQuestions, () => true, 10);
+        appendUntil(raw.banners, mockBanners, () => true);
+        appendUntil(raw.echoPublications, mockEchoPublications, () => true);
+        for (const notice of raw.notices) {
+          if (notice.status !== '已发布') { notice.status = '已发布'; dataChanged = true; }
+          const targetCount = noticeAudience[notice.scope] || noticeAudience['全体职工'];
+          if (!Number.isFinite(notice.targetCount)) { notice.targetCount = targetCount; dataChanged = true; }
+          if (!Number.isFinite(notice.successCount)) { notice.successCount = notice.targetCount; dataChanged = true; }
+        }
+        for (const policy of raw.policies) if (policy.status !== '已发布') { policy.status = '已发布'; dataChanged = true; }
+        for (const candidate of mockPosts.filter((post) => post.status === '私密发布')) {
+          const current = raw.posts.find((post) => post.id === candidate.id);
+          if (current?.status === '已发布' && !raw.audit.some((event) => String(event.target) === String(current.id))) { current.status = '私密发布'; dataChanged = true; }
+        }
+        if ([raw.posts.length, raw.notices.length, raw.policies.length, raw.questions.length, raw.banners.length, raw.echoPublications.length].join(':') !== countsBefore) dataChanged = true;
+        for (const post of raw.posts) ensureEngagement(post);
+        for (const publication of raw.echoPublications) ensureEngagement(publication);
+        for (const account of raw.accounts || []) {
+          if (!account.submitted && account.createdAt) { account.submitted = account.createdAt; dataChanged = true; }
+          const fallback = defaults.accounts.find((item) => item.id === account.id);
+          if (account.department === '待完善' && fallback?.department && fallback.department !== '待完善') { account.department = fallback.department; dataChanged = true; }
+        }
+        const managedMenuDefaults = defaults.menus.filter((item) => ['menu-audit', 'menu-review'].includes(item.id) || ['menu-audit', 'menu-review'].includes(item.parentId));
+        for (const expected of managedMenuDefaults) {
+          const current = raw.menus.find((item) => item.id === expected.id);
+          const legacyNames = { 'menu-review': '内容治理', 'menu-post': '帖子审核', 'menu-comment': '评论与举报' };
+          if (current && current.name === legacyNames[current.id]) {
+            Object.assign(current, expected, { enabled: current.enabled, visible: current.visible, createdAt: current.createdAt });
+            dataChanged = true;
+          } else if (current?.id === 'menu-comment' && current.parentId === 'menu-review' && current.name === '信息发布审核' && current.path === 'content-review') {
+            current.parentId = 'menu-audit'; current.sort = 2;
+            dataChanged = true;
+          } else if (current?.id === 'menu-review' && current.name === '内容管理' && current.sort === 2) {
+            current.sort = 3;
+            dataChanged = true;
+          } else if (current?.id === 'menu-comment-review' && current.parentId === 'menu-audit' && current.name === '评论审核' && current.icon === 'message-square-check') {
+            current.icon = 'message-square';
+            dataChanged = true;
+          } else if (current?.id === 'menu-report-review' && current.name === '举报复核') {
+            current.name = '举报核查';
+            dataChanged = true;
+          } else if (!current) {
+            raw.menus.push({ ...expected });
+            dataChanged = true;
+          }
+        }
+        const affairsMenu = raw.menus.find((item) => item.id === 'menu-affairs');
+        if (affairsMenu?.name === '事项办理' && affairsMenu.parentId === null && affairsMenu.sort === 3) { affairsMenu.sort = 4; dataChanged = true; }
+        for (const role of raw.roles) {
+          if (!Array.isArray(role.permissions) || !role.permissions.includes('内容治理')) continue;
+          role.permissions = role.permissions.map((name) => name === '内容治理' ? '内容管理' : name);
+          dataChanged = true;
+        }
+        if (!Array.isArray(raw.echoPublications)) {
+          raw.echoPublications = raw.affairs.filter((affair) => affair.draft && affair.feedback === '公开答复' && ['已反馈', '已办结'].includes(affair.status)).map((affair) => ({
+            id: `echo-migrated-${affair.id}`,
+            sourcePostId: affair.postId,
+            affairId: affair.id,
+            title: `关于“${affair.title}”的答复`,
+            body: affair.draft,
+            scope: '全体职工',
+            status: '已发布',
+            publishedAt: '历史公开'
+          }));
+          dataChanged = true;
+        }
+        for (const publication of raw.echoPublications) {
+          const before = JSON.stringify(publication.engagement || null);
+          ensureEngagement(publication);
+          if (JSON.stringify(publication.engagement) !== before) dataChanged = true;
+        }
+        if (!Array.isArray(raw.accounts)) raw.accounts = defaults.accounts;
+        for (const account of defaults.accounts) if (!raw.accounts.some((item) => item.phone === account.phone)) { raw.accounts.push(account); dataChanged = true; }
+        if (dataChanged) localStorage.setItem(key, JSON.stringify(raw));
+        return raw;
+      }
+    } catch (_) { /* Invalid demo data starts from the seed. */ }
+    const data = initial();
+    localStorage.setItem(key, JSON.stringify(data));
+    return data;
+  }
+  window.PrototypeData = {
+    read,
+    emptyEngagement,
+    ensureEngagement,
+    save(data) { localStorage.setItem(key, JSON.stringify(data)); window.dispatchEvent(new Event('prototype-data-changed')); },
+    reset() { const data = initial(); this.save(data); return data; },
+    postingBoards(data = read()) { return data.boards.filter((board) => board.enabled && board.staffPost); },
+    flowFor(board, data = read()) { const item = data.flowConfigs?.find((flow) => flow.board === board); return item ? { ...item.published, board, version: item.version } : null; },
+    blockedWord(content, scope, data = read()) {
+      const normalized = String(content ?? '').normalize('NFKC').toLocaleLowerCase();
+      return data.sensitiveWords.find((rule) => {
+        if (!rule.enabled || (rule.scope !== '全部' && rule.scope !== scope)) return false;
+        const term = String(rule.term || '').trim().normalize('NFKC').toLocaleLowerCase();
+        if (!term) return false;
+        if (rule.matchRule !== '完整词匹配') return normalized.includes(term);
+        let start = normalized.indexOf(term);
+        while (start !== -1) {
+          const before = normalized.slice(0, start);
+          const after = normalized.slice(start + term.length);
+          if (!/[\p{L}\p{N}_]$/u.test(before) && !/^[\p{L}\p{N}_]/u.test(after)) return true;
+          start = normalized.indexOf(term, start + 1);
+        }
+        return false;
+      }) || null;
+    },
+    recordHit(rule, data) {
+      rule.hitCount = (Number.isFinite(rule.hitCount) ? rule.hitCount : 0) + 1;
+      this.save(data);
+    },
+    protectedMatch(content, scope, data = read()) {
+      const text = String(content ?? '').normalize('NFKC').toLocaleLowerCase();
+      const today = new Date().toISOString().slice(0, 10);
+      for (const list of data.protectedLists || []) {
+        if (!list.enabled || (list.expires && list.expires < today) || (list.scope !== '全部' && list.scope !== scope)) continue;
+        for (const entry of list.entries || []) {
+          const name = String(entry.name || '').trim().normalize('NFKC').toLocaleLowerCase();
+          const contexts = [entry.unit, entry.position].map((value) => String(value || '').trim().normalize('NFKC').toLocaleLowerCase()).filter(Boolean);
+          if (name && contexts.length && text.includes(name) && contexts.some((value) => text.includes(value))) return { list, entry };
+        }
+      }
+      return null;
+    }
+  };
+})();
