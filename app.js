@@ -79,7 +79,7 @@ const homeNotices = [
   { id: 'notice-3', channel: '心声诉求', category: '心声诉求', icon: 'lock-keyhole', title: '平台个人信息与隐私保护说明', summary: '平台将按最小必要原则处理账号信息和互动数据，请查看相关保护说明。', meta: '隐私说明 · 09-08' },
   { id: 'notice-4', channel: '其他', category: '其他', icon: 'user-round-check', title: '匿名发言使用与保护说明', summary: '匿名发言仍需遵守平台规则，平台将依法依规保护合理诉求和个人隐私。', meta: '匿名说明 · 09-07' },
   { id: 'notice-5', channel: '回音壁', category: '回音壁', icon: 'clipboard-check', title: '问题整改反馈公开说明', summary: '共性问题的办理结果、整改措施和公开进展将持续在平台同步。', meta: '整改公示 · 09-06' },
-  { id: 'notice-6', channel: '业务交流', category: '业务交流', icon: 'megaphone', title: '为农服务重点工作交流提示', summary: '欢迎围绕基层服务、县域流通和产销对接补充一线经验与可行建议。', meta: '工作动态 · 09-05' }
+  { id: 'notice-6', channel: '业务交流', category: '业务交流', icon: 'megaphone', title: '为农服务重点工作交流提示', summary: '欢迎围绕基层服务、县域流通和产销对接补充一线经验与可行建议。', body: '请各单位结合近期为农服务工作，梳理基层服务、县域流通和产销对接中的具体问题与有效做法。交流材料应说明适用场景、实施步骤和实际成效，并在规定时间内反馈至合作指导处。', attachment: { name: '为农服务工作交流要点.txt', content: '为农服务工作交流要点\n\n一、基层服务：梳理服务覆盖、人员配置和农资配送情况。\n二、县域流通：说明集采集配、仓储和冷链协同做法。\n三、产销对接：列出供需信息更新和对接反馈机制。\n四、请勿在公开材料中包含涉密或个人敏感信息。' }, meta: '工作动态 · 09-05' }
 ];
 function noticeTimestamp(notice) {
   const raw = notice.publishedAt || notice.createdAt || notice.date || notice.meta?.match(/\d{2}-\d{2}/)?.[0] || '01-01';
@@ -200,7 +200,7 @@ const personalInteractions = [
 ];
 const interactionMockTitles = ['基层网点数字化设备配置建议', '农产品品牌联合推广经验', '机关食堂服务优化讨论', '再生资源网点运营数据复盘', '职工健康咨询服务建议', '县域流通项目节点管理经验', '培训名额分配规则说明', '农资集采集配降本做法', '业务系统权限流程优化', '青年人才双向交流机制', '基层社经营考核指标建议', '农业社会化服务验收要点', '办公耗材配送周期答复', '职工通勤保障办理进展', '项目资料共享机制建议', '冷链设备运维经验交流', '平台匿名发言保护说明'];
 interactionMockTitles.forEach((title, index) => {
-  const types = ['评论', '点赞', '收藏', '举报'];
+  const types = ['评论', '点赞', '举报'];
   const type = types[index % types.length];
   personalInteractions.push({ type, title, detail: `${type === '举报' ? '待核查' : type === '评论' ? '评论已发布' : `已${type}`} · 09 月 ${String(6 + (index % 9)).padStart(2, '0')} 日`, icon: type === '评论' ? 'message-circle' : type === '点赞' ? 'thumbs-up' : type === '收藏' ? 'star' : 'flag', content: type === '评论' ? `我对“${title}”补充了相关工作建议和一线执行情况。` : type === '举报' ? '信息表述可能存在偏差，已提交平台管理员核查。' : `你已${type}该内容，可在个人中心查看操作记录。` });
 });
@@ -331,7 +331,7 @@ const roleMeta = { staff: ['职工', 'user-round'], handler: ['承办', 'briefca
 const MANAGEMENT_APP_URL = new URL('管理端原型设计/?v=20260915-flow-fixtures-v2', document.baseURI).href;
 function openHandlerWorkspace(account) { sessionStorage.setItem('prototype-handler-account-id', account.id); const url = new URL(MANAGEMENT_APP_URL); url.searchParams.set('role', 'handler'); window.location.href = url.href; }
 function openManagementWorkspace(roleOrAccount) { const account = typeof roleOrAccount === 'string' ? accounts.find((item) => item.role === roleOrAccount && item.status === 'approved') : roleOrAccount; if (!account) return showToast('暂无可用的演示账号。'); const role = account.role === 'admin' ? 'platform' : account.role; sessionStorage.setItem('prototype-management-account-id', account.id); if (role === 'handler') sessionStorage.setItem('prototype-handler-account-id', account.id); const url = new URL(MANAGEMENT_APP_URL); url.searchParams.set('role', role); window.location.href = url.href; }
-const state = { view: 'login', loginPortal: 'staff', loginMode: 'password', error: '', notice: '', session: null, staffDisplayMode: 'desktop', workspaceView: 'dashboard', profileOpen: false, accountCenterOpen: false, accountCenterTab: 'basic', personalTab: 'posts', personalPostCategory: '建言献策', personalExpandedPostId: null, personalProgressId: null, progressListOpen: false, editingPostId: null, personalFavoriteIndex: null, personalEditOpen: false, interactionDetail: null, postComposerOpen: false, smsRemaining: 0, portalTab: '全部', homeContentTab: '全部', policyTab: 'policy', policyDetailId: null, bannerDetail: null, noticeDetailId: null, noticeTab: '全部', noticeRead: {}, noticeCarouselIndex: 0, affairCarouselIndex: 0, bannerIndex: 0, postActions: {}, expandedPostId: null, commentPostId: null, reportPostId: null, replyTarget: '', rankModal: null };
+const state = { view: 'login', loginPortal: 'staff', loginMode: 'password', error: '', notice: '', session: null, staffDisplayMode: 'desktop', workspaceView: 'dashboard', profileOpen: false, accountCenterOpen: false, accountCenterTab: 'basic', personalTab: 'posts', personalPostCategory: '建言献策', personalInteractionCategory: '评论', personalExpandedPostId: null, personalProgressId: null, progressListOpen: false, editingPostId: null, personalFavoriteIndex: null, personalEditOpen: false, interactionDetail: null, postComposerOpen: false, policyQuestionOpen: false, myPolicyQuestionsOpen: false, smsRemaining: 0, portalTab: '全部', homeContentTab: '全部', policyTab: 'policy', policyDetailId: null, bannerDetail: null, noticeDetailId: null, noticeTab: '全部', noticeRead: {}, noticeCarouselIndex: 0, affairCarouselIndex: 0, bannerIndex: 0, postActions: {}, expandedPostId: null, commentPostId: null, reportPostId: null, replyTarget: '', rankModal: null };
 const icon = (name) => `<i data-lucide="${name}" class="icon"></i>`;
 const escapeHtml = (value) => String(value).replace(/[&<>"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[char]));
 const byId = (id) => document.getElementById(id);
@@ -456,7 +456,7 @@ function activeManagedBanners(data = PrototypeData.read()) {
     }
     const targets = item.type === 'notice' ? data.notices : [...data.policies, ...data.questions];
     return targets.some((target) => String(target.id) === String(item.targetId) && target.status === '已发布' && target.enabled !== false && !target.deleted);
-  }).sort((a, b) => a.sort - b.sort);
+  }).sort((a, b) => a.sort - b.sort).slice(0, 8);
 }
 function renderStaffPortal() {
   const managedBanners = activeManagedBanners();
@@ -487,6 +487,24 @@ function renderSupplyVoice() {
     </section>
   </div>`;
 }
+function getMyPolicyQuestions() {
+  const data = PrototypeData.read();
+  return (data?.questions || []).filter((item) => item.authorId && item.authorId === state.session?.id).sort((a, b) => String(b.submittedAt || '').localeCompare(String(a.submittedAt || '')));
+}
+function renderPolicyQuestionTools() {
+  const questions = getMyPolicyQuestions();
+  return `<section class="knowledge-question-tools"><div class="knowledge-question-intro"><span class="knowledge-section-mark"></span><div><h2>有问题，直接提交</h2><p>提交给相关部门答复，公开答复后会进入常见问答。</p></div></div><div class="knowledge-question-actions"><button type="button" class="knowledge-question-button primary" onclick="AppPrototype.openPolicyQuestion()">${icon('message-square-plus')} <span>我要提问</span></button><button type="button" class="knowledge-question-button" onclick="AppPrototype.openMyPolicyQuestions()">${icon('clipboard-list')} <span>我的提问</span>${questions.length ? `<em>${questions.length}</em>` : ''}</button></div></section>`;
+}
+function renderPolicyQuestionModal() {
+  if (!state.policyQuestionOpen) return '';
+  return `<div class="ranking-backdrop" onclick="AppPrototype.closePolicyQuestion(event)"><section class="ranking-modal knowledge-question-modal" role="dialog" aria-modal="true" aria-labelledby="policy-question-title"><header class="ranking-modal-head"><div><span>政策答疑与公开 · 职工提问</span><h2 id="policy-question-title">提交问题</h2><p>请描述实际工作中遇到的政策、办事或制度问题，我们会转交相关部门答复。</p></div><button type="button" class="ranking-close" title="关闭" onclick="AppPrototype.closePolicyQuestion()">${icon('x')}</button></header><form class="knowledge-question-form" onsubmit="event.preventDefault();AppPrototype.submitPolicyQuestion()"><label><span>问题标题 <i>必填</i></span><small>用一句话概括你想了解的事项</small><input id="policy-question-title-input" maxlength="80" placeholder="例如：基层社项目申报需要准备哪些材料？" required></label><label><span>问题分类 <i>必填</i></span><select id="policy-question-category"><option>项目申报</option><option>财务管理</option><option>教育培训</option><option>数据管理</option><option>其他</option></select></label><label><span>问题描述 <i>必填</i></span><small>可补充背景、当前困难和希望得到的具体答复，500 字以内</small><textarea id="policy-question-body" maxlength="500" rows="6" placeholder="请填写问题的具体情况"></textarea></label><label class="knowledge-question-check"><input id="policy-question-anonymous" type="checkbox"><span>匿名提交</span><small>匿名后，公开答复不会显示你的姓名</small></label><footer class="post-compose-actions"><button type="button" onclick="AppPrototype.closePolicyQuestion()">取消</button><button type="submit" class="primary">提交问题</button></footer></form></section></div>`;
+}
+function renderMyPolicyQuestionsModal() {
+  if (!state.myPolicyQuestionsOpen) return '';
+  const questions = getMyPolicyQuestions();
+  const statusClass = { '待答复': 'pending', '答复中': 'working', '已发布': 'published', '已关闭': 'closed' };
+  return `<div class="ranking-backdrop" onclick="AppPrototype.closeMyPolicyQuestions(event)"><section class="ranking-modal knowledge-question-modal" role="dialog" aria-modal="true" aria-labelledby="my-policy-questions-title"><header class="ranking-modal-head"><div><span>政策答疑与公开</span><h2 id="my-policy-questions-title">我的提问</h2><p>查看问题提交记录和答复状态。</p></div><button type="button" class="ranking-close" title="关闭" onclick="AppPrototype.closeMyPolicyQuestions()">${icon('x')}</button></header><div class="knowledge-question-list">${questions.length ? questions.map((item) => `<article class="knowledge-question-item"><div><span>${escapeHtml(item.category || '其他')}</span><small>${escapeHtml(item.submittedAt || '')}</small></div><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.body || '')}</p><strong class="knowledge-question-status ${statusClass[item.status] || 'pending'}">${escapeHtml(item.status || '待答复')}</strong>${item.answer ? `<div class="knowledge-question-answer"><b>答复</b><p>${escapeHtml(item.answer)}</p></div>` : ''}</article>`).join('') : '<p class="knowledge-question-empty">还没有提交过问题。</p>'}</div><footer class="post-compose-actions"><button type="button" class="primary" onclick="AppPrototype.closeMyPolicyQuestions()">关闭</button></footer></section></div>`;
+}
 function getPolicyDetail(id) {
   return Object.values(policyContent).flat().find((item) => item.id === id);
 }
@@ -511,9 +529,9 @@ function renderPolicyPage() {
       <div class="knowledge-hot-list">${hotItems.map((item) => `<button type="button" class="knowledge-hot-item" onclick="AppPrototype.openPolicyDetail('${item.id}')"><span class="knowledge-hot-tag">${item.type}</span><span class="knowledge-hot-title">${item.title}</span><span class="knowledge-hot-date">${item.date.slice(5).replace('-', '月')}日</span>${icon('arrow-up-right')}</button>`).join('')}</div>
     </section>
     <nav class="knowledge-entry-cards" aria-label="政策内容分类">${policyTabs.map(([id, label, description], index) => `<button type="button" class="knowledge-entry-card ${state.policyTab === id ? 'active' : ''}" onclick="AppPrototype.setPolicyTab('${id}')"><span class="knowledge-entry-icon">${icon(id === 'policy' ? 'file-text' : id === 'faq' ? 'circle-help' : 'clipboard-check')}</span><span><strong>${label}</strong><small>${index === 0 ? '政策文件与办事指引' : index === 1 ? '问题与标准答复' : '结果与公开进展'}</small></span>${icon('arrow-right')}</button>`).join('')}</nav>
+    ${active[0] === 'faq' ? renderPolicyQuestionTools() : ''}
     <section class="knowledge-section knowledge-catalog">
       <header class="knowledge-section-head"><div><span class="knowledge-section-mark"></span><h2>政策清单</h2></div><span>共 ${items.length} 条 · ${active[1]}</span></header>
-      <nav class="knowledge-catalog-tabs" aria-label="政策清单分类">${policyTabs.map(([id, label]) => `<button type="button" class="${state.policyTab === id ? 'active' : ''}" onclick="AppPrototype.setPolicyTab('${id}')">${label}</button>`).join('')}</nav>
       <div class="knowledge-catalog-list">${items.map(renderPolicyCatalogItem).join('')}</div>
       <footer class="knowledge-catalog-foot">当前展示 ${items.length} 条公开内容</footer>
     </section>
@@ -521,11 +539,46 @@ function renderPolicyPage() {
 }
 function renderPolicyNotices() {
   const unreadCount = homeNotices.filter((notice) => !state.noticeRead[notice.id]).length;
-  const noticeTabs = [['全部', 'all'], ['建言献策', '建言献策'], ['心声诉求', '心声诉求'], ['业务交流', '业务交流'], ['回音壁', '回音壁'], ['其他', '其他']];
-  const activeNoticeChannel = noticeTabs.find(([label]) => label === state.noticeTab)?.[1] || 'all';
-  const notices = activeNoticeChannel === 'all' ? homeNotices : homeNotices.filter((notice) => notice.channel === activeNoticeChannel);
-  const visibleUnreadCount = notices.filter((notice) => !state.noticeRead[notice.id]).length;
-  return `<section class="knowledge-section knowledge-notice-section"><header class="knowledge-notice-head"><div><span class="knowledge-section-mark"></span><div><h2>通知公告</h2><p>及时查看平台规则、服务说明和工作提示</p></div></div><div class="knowledge-notice-head-actions"><span class="knowledge-notice-count">${unreadCount ? `${unreadCount} 条未读` : '全部已读'}</span><button type="button" onclick="AppPrototype.markAllNoticesRead()">全部标记已读</button></div></header><nav class="knowledge-notice-tabs" aria-label="通知公告分类">${noticeTabs.map(([label, value]) => `<button type="button" class="${state.noticeTab === label ? 'active' : ''}" onclick="AppPrototype.setNoticeTab('${label}')">${label}${value === 'all' && unreadCount ? ` <b>${unreadCount}</b>` : value !== 'all' && visibleUnreadCount && state.noticeTab === label ? ` <b>${visibleUnreadCount}</b>` : ''}</button>`).join('')}</nav><div class="knowledge-notice-list">${notices.length ? notices.map((notice) => { const read = Boolean(state.noticeRead[notice.id]); return `<article class="knowledge-notice-item ${read ? 'read' : 'unread'}"><div class="knowledge-notice-item-top"><span class="knowledge-notice-kind">${icon(notice.icon)} ${notice.category}</span><small>${notice.meta}</small></div><h3>${notice.title}${read ? '' : '<i class="knowledge-notice-unread-dot" aria-label="未读"></i>'}</h3><p>${notice.summary}</p><div class="knowledge-notice-actions"><button type="button" onclick="AppPrototype.readNotice('${notice.id}')">我已知悉</button><button type="button" class="primary" onclick="AppPrototype.openNotice('${notice.id}')">立即查看 ${icon('arrow-right')}</button></div></article>`; }).join('') : '<p class="knowledge-notice-empty">当前分类暂无通知。</p>'}</div><footer class="knowledge-notice-foot">${unreadCount ? '还有未读通知，请及时查看。' : '已全部读完'}</footer></section>`;
+  const noticeTabs = ['全部', '未读', '已读'];
+  const notices = homeNotices.filter((notice) => state.noticeTab === '全部' || Boolean(state.noticeRead[notice.id]) === (state.noticeTab === '已读'));
+  return `<section class="knowledge-section knowledge-notice-section"><header class="knowledge-notice-head"><div><span class="knowledge-section-mark"></span><div><h2>通知公告</h2><p>及时查看平台规则、服务说明和工作提示</p></div></div><div class="knowledge-notice-head-actions"><span class="knowledge-notice-count">${unreadCount ? `${unreadCount} 条未读` : '全部已读'}</span><button type="button" onclick="AppPrototype.markAllNoticesRead()">全部标记已读</button></div></header><nav class="knowledge-notice-tabs" aria-label="通知公告阅读状态">${noticeTabs.map((label) => `<button type="button" class="${state.noticeTab === label ? 'active' : ''}" onclick="AppPrototype.setNoticeTab('${label}')">${label}${label === '未读' && unreadCount ? ` <b>${unreadCount}</b>` : ''}</button>`).join('')}</nav><div class="knowledge-notice-list">${notices.length ? notices.map((notice) => { const read = Boolean(state.noticeRead[notice.id]); return `<article class="knowledge-notice-item ${read ? 'read' : 'unread'}"><div class="knowledge-notice-item-top"><span class="knowledge-notice-kind">${icon('megaphone')} 通知公告</span><small>${escapeHtml(notice.meta)}</small></div><h3>${escapeHtml(notice.title)}${read ? '' : '<i class="knowledge-notice-unread-dot" aria-label="未读"></i>'}</h3><p>${escapeHtml(notice.summary)}</p><div class="knowledge-notice-actions">${read ? '' : `<button type="button" onclick="AppPrototype.readNotice('${notice.id}')">我已知悉</button>`}<button type="button" class="primary" onclick="AppPrototype.openNotice('${notice.id}')">立即查看 ${icon('arrow-right')}</button></div></article>`; }).join('') : `<p class="knowledge-notice-empty">${state.noticeTab === '未读' ? '暂无未读通知。' : '暂无已读通知。'}</p>`}</div><footer class="knowledge-notice-foot">${unreadCount ? '还有未读通知，请及时查看。' : '已全部读完'}</footer></section>`;
+}
+function noticeAttachment(notice) {
+  const file = notice?.attachment;
+  return file && typeof file === 'object' && (typeof file.content === 'string' || /^https?:\/\/|^\.\/?/.test(file.url || '')) ? file : null;
+}
+function renderNoticeAttachment(notice) {
+  const file = noticeAttachment(notice);
+  if (!file) return '';
+  return `<section class="knowledge-attachment notice-attachment"><div>${icon('paperclip')}<div><span>关联附件</span><strong>${escapeHtml(file.name || '附件')}</strong></div></div><div class="notice-file-actions"><button type="button" onclick="AppPrototype.previewNoticeFile('${notice.id}')">预览</button><button type="button" onclick="AppPrototype.downloadNoticeFile('${notice.id}')">${icon('download')} 下载</button></div></section>`;
+}
+function renderNoticeDetailBody(notice) {
+  return `<p class="knowledge-summary">${escapeHtml(notice.summary)}</p><section class="knowledge-detail-section"><h3>通知内容</h3><p>${escapeHtml(notice.body || notice.summary)}</p></section>${renderNoticeAttachment(notice)}`;
+}
+function renderNoticeDetailModal() {
+  if (!state.noticeDetailId || state.staffDisplayMode === 'mobile') return '';
+  const notice = homeNotices.find((item) => item.id === state.noticeDetailId);
+  if (!notice) return '';
+  return `<div class="ranking-backdrop" onclick="AppPrototype.closeNoticeDetail(event)"><section class="ranking-modal knowledge-modal" role="dialog" aria-modal="true" aria-labelledby="notice-detail-title"><header class="ranking-modal-head"><div><span>通知公告</span><h2 id="notice-detail-title">${escapeHtml(notice.title)}</h2><p>${escapeHtml(notice.meta)}</p></div><button type="button" class="ranking-close" title="关闭" onclick="AppPrototype.closeNoticeDetail()">${icon('x')}</button></header><div class="knowledge-modal-body">${renderNoticeDetailBody(notice)}</div></section></div>`;
+}
+function noticeFileUrl(file) {
+  if (typeof file.content === 'string') return URL.createObjectURL(new Blob([file.content], { type: 'text/plain;charset=utf-8' }));
+  return new URL(file.url, location.href).href;
+}
+function openNoticeFile(id, download) {
+  const notice = homeNotices.find((item) => item.id === id);
+  const file = noticeAttachment(notice);
+  if (!file) return showToast('附件文件暂不可用。');
+  const url = noticeFileUrl(file);
+  const link = document.createElement('a');
+  link.href = url;
+  if (download) link.download = file.name || '通知附件';
+  else link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  document.body.append(link);
+  link.click();
+  link.remove();
+  if (typeof file.content === 'string') setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 function renderAffairProgressModal() {
   if (state.personalProgressId === null) return '';
@@ -588,7 +641,10 @@ function renderPersonalCenter() {
   const progressItems = allMyPosts.map((post) => staffPostProgress(post));
   const processingCount = progressItems.filter((item) => ['待审核', '办理中', '逾期', '已处理-分办审核'].includes(item.label)).length;
   const repliedCount = progressItems.filter((item) => item.label === '已办结').length;
-  const tabBody = state.personalTab === 'posts' ? `<div class="personal-filter-bar">${categories.map((category) => `<button type="button" class="${activeCategory === category ? 'active' : ''}" onclick="AppPrototype.setPersonalPostCategory('${category}')">${category}</button>`).join('')}</div><div class="personal-list">${renderPersonalComments(myComments)}</div>` : state.personalTab === 'favorites' ? `<div class="personal-list">${personalFavorites.map((item) => `<article class="personal-post-row"><div class="personal-row-main"><div class="personal-row-meta"><span>${item.category}</span><small>${item.detail}</small></div><h3>${item.title}</h3><p>${item.excerpt}</p><div class="personal-row-stats">${icon('star')} 已收藏</div></div><button type="button" class="personal-row-action" onclick="AppPrototype.notify()">查看内容 ${icon('arrow-right')}</button></article>`).join('')}</div>` : `<div class="personal-list">${personalInteractions.map((item, index) => `<article class="personal-interaction-row"><div class="personal-interaction-icon">${icon(item.icon)}</div><div class="personal-row-main"><div class="personal-row-meta"><span>${item.type}</span><small>${item.detail}</small></div><h3>${item.title}</h3></div><button type="button" class="personal-row-action" onclick="AppPrototype.openInteractionDetail(${index})">查看记录 ${icon('arrow-right')}</button></article>`).join('')}</div>`;
+  const interactionCategories = ['评论', '点赞', '举报'];
+  const interactionItems = personalInteractions.filter((item) => item.type === state.personalInteractionCategory);
+  const interactionFilter = `<div class="personal-filter-bar">${interactionCategories.map((category) => `<button type="button" class="${state.personalInteractionCategory === category ? 'active' : ''}" onclick="AppPrototype.setPersonalInteractionCategory('${category}')">${category}</button>`).join('')}</div>`;
+  const tabBody = state.personalTab === 'posts' ? `<div class="personal-filter-bar">${categories.map((category) => `<button type="button" class="${activeCategory === category ? 'active' : ''}" onclick="AppPrototype.setPersonalPostCategory('${category}')">${category}</button>`).join('')}</div><div class="personal-list">${renderPersonalComments(myComments)}</div>` : state.personalTab === 'favorites' ? `<div class="personal-list">${personalFavorites.map((item) => `<article class="personal-post-row"><div class="personal-row-main"><div class="personal-row-meta"><span>${item.category}</span><small>${item.detail}</small></div><h3>${item.title}</h3><p>${item.excerpt}</p><div class="personal-row-stats">${icon('star')} 已收藏</div></div><button type="button" class="personal-row-action" onclick="AppPrototype.notify()">查看内容 ${icon('arrow-right')}</button></article>`).join('')}</div>` : `${interactionFilter}<div class="personal-list">${interactionItems.map((item, index) => `<article class="personal-interaction-row"><div class="personal-interaction-icon">${icon(item.icon)}</div><div class="personal-row-main"><div class="personal-row-meta"><span>${item.type}</span><small>${item.detail}</small></div><h3>${item.title}</h3></div><button type="button" class="personal-row-action" onclick="AppPrototype.openInteractionDetail(${personalInteractions.indexOf(item)})">查看记录 ${icon('arrow-right')}</button></article>`).join('')}</div>`;
   return `<div class="personal-page"><div class="page-head portal-head"><div><div class="page-kicker">职工服务</div><h1>个人中心</h1><p>管理个人资料，查看发言与互动记录</p></div><span class="date">2026 年 09 月 10 日 · 星期四</span></div><section class="personal-profile"><div class="personal-identity"><div class="personal-avatar">${escapeHtml(user.name.slice(0, 1))}</div><div><h2>${escapeHtml(user.name)}</h2><p>${escapeHtml(user.department)}　·　账号已审核</p><span>${escapeHtml(user.phone.slice(0, 3) + '****' + user.phone.slice(-4))}</span></div></div><button type="button" class="personal-profile-action" onclick="AppPrototype.openPersonalEdit()">编辑资料 ${icon('pencil-line')}</button></section><section class="personal-summary-grid"><div><strong>${allMyPosts.length}</strong><span>我的发言</span></div><div><strong>${processingCount}</strong><span>处理中</span></div><div><strong>${repliedCount}</strong><span>收到回复</span></div><div><strong>${unreadCount}</strong><span>未读通知</span></div></section><section class="personal-panel"><nav class="personal-tabs" aria-label="个人中心分类">${tabs.map(([id, label, iconName]) => `<button type="button" class="${state.personalTab === id ? 'active' : ''}" onclick="AppPrototype.setPersonalTab('${id}')">${icon(iconName)}<span>${label}</span></button>`).join('')}</nav><div class="personal-tab-body">${tabBody}</div></section>${renderInteractionDetail()}${renderPersonalFavoriteDetail()}</div>`;
 }
 function renderPersonalEditModal() {
@@ -692,7 +748,7 @@ function renderAccountCenterModal() {
   const devices = `<div class="account-devices"><h3>我的在线设备</h3><div class="account-table-wrap"><table><thead><tr><th>序号</th><th>登录平台</th><th>IP 地址</th><th>登录地址</th><th>浏览器</th><th>系统</th><th>登录时间</th><th>操作</th></tr></thead><tbody><tr><td>1</td><td>PC</td><td>117.152.223.105</td><td>中国湖北省武汉市</td><td>Chrome</td><td>OS X</td><td>2026-09-14 14:26</td><td><button onclick="AppPrototype.notify()">强制下线</button></td></tr></tbody></table></div></div>`;
   return `<div class="account-modal-backdrop" onclick="AppPrototype.closeAccountCenter(event)"><section class="account-modal" role="dialog" aria-modal="true" aria-label="个人中心"><header><h2>个人中心</h2><button onclick="AppPrototype.closeAccountCenter()" title="关闭">${icon('x')}</button></header><nav>${[['basic','基本设置'],['security','安全设置'],['devices','在线设备']].map(([id,label]) => `<button class="${tab === id ? 'active' : ''}" onclick="AppPrototype.setAccountCenterTab('${id}')">${label}</button>`).join('')}</nav><div class="account-modal-body">${tab === 'basic' ? basic : tab === 'security' ? security : devices}</div></section></div>`;
 }
-function renderWorkspace() { if (state.session.role === 'staff' && state.staffDisplayMode === 'mobile') return renderMobileWorkspace(); return `<div class="workspace role-${state.session.role}">${renderTopbar()}${renderSidebar()}<main class="workspace-main">${renderWorkspaceContent()}</main>${renderRankingModal()}${renderPolicyDetailModal()}${renderBannerDetailModal()}${state.session.role === 'staff' ? renderPersonalEditModal() + renderProgressListModal() + renderAffairProgressModal() + renderPostComposer() : ''}${renderAccountCenterModal()}</div>`; }
+function renderWorkspace() { if (state.session.role === 'staff' && state.staffDisplayMode === 'mobile') return renderMobileWorkspace(); return `<div class="workspace role-${state.session.role}">${renderTopbar()}${renderSidebar()}<main class="workspace-main">${renderWorkspaceContent()}</main>${renderRankingModal()}${renderPolicyDetailModal()}${renderNoticeDetailModal()}${renderPolicyQuestionModal()}${renderMyPolicyQuestionsModal()}${renderBannerDetailModal()}${state.session.role === 'staff' ? renderPersonalEditModal() + renderProgressListModal() + renderAffairProgressModal() + renderPostComposer() : ''}</div>`; }
 function syncPrototypeData() {
   const data = window.PrototypeData?.read();
   if (!data) return;
@@ -727,16 +783,16 @@ function syncPrototypeData() {
   personalAffairs.splice(0, personalAffairs.length, ...data.affairs.map((a) => ({ id: a.id, title: a.title, category: portalPosts.find((post) => post.id === a.postId)?.board || a.from || '事项', status: a.status, owner: a.owner, deadline: a.deadline, stage: a.stage, requirements: a.requirements, events: a.events || [], update: `${a.owner} · 截止 ${a.deadline}`, step: a.status === '已反馈' || a.status === '已办结' ? a.draft : a.progress || a.events?.at(-1)?.text || '等待承办部门更新进展' })));
   const sharedNoticeIds = new Set(data.notices.map((n) => n.id));
   for (let i = homeNotices.length - 1; i >= 0; i--) if (sharedNoticeIds.has(homeNotices[i].id)) homeNotices.splice(i, 1);
-  for (const notice of data.notices.filter((n) => n.status === '已发布')) homeNotices.unshift({ id: notice.id, channel: '其他', category: '其他', icon: 'megaphone', title: notice.title, summary: notice.body, meta: `${notice.scope} · 最新公告`, publishedAt: notice.publishedAt || notice.createdAt || notice.submittedAt });
+  for (const notice of data.notices.filter((n) => n.status === '已发布')) homeNotices.unshift({ id: notice.id, channel: '其他', category: '其他', icon: 'megaphone', title: notice.title, summary: notice.body, body: notice.body, attachment: notice.attachment || null, meta: `${notice.scope} · 最新公告`, publishedAt: notice.publishedAt || notice.createdAt || notice.submittedAt });
   for (const type of ['policy', 'faq']) for (let i = policyContent[type].length - 1; i >= 0; i--) if (policyContent[type][i].sharedPublication) policyContent[type].splice(i, 1);
   const managedPolicyTitles = new Set((data.policies || []).map((item) => item.title));
-  const managedQuestionTitles = new Set((data.questions || []).map((item) => item.title));
+  const managedQuestionTitles = new Set((data.questions || []).filter((item) => item.status === '已发布' && item.answer).map((item) => item.title));
   for (let i = policyContent.policy.length - 1; i >= 0; i--) if (managedPolicyTitles.has(policyContent.policy[i].title)) policyContent.policy.splice(i, 1);
   for (let i = policyContent.faq.length - 1; i >= 0; i--) if (managedQuestionTitles.has(policyContent.faq[i].title)) policyContent.faq.splice(i, 1);
   for (const policy of (data.policies || []).filter((item) => item.status === '已发布')) policyContent.policy.unshift({ id: `shared-${policy.id}`, sharedPublication: true, type: '政策文件', title: policy.title, category: policy.category, department: policy.department, date: policy.publishedAt, summary: policy.summary, content: policy.body, attachment: policy.attachment || '' });
   for (const question of (data.questions || []).filter((item) => item.status === '已发布' && item.answer)) policyContent.faq.unshift({ id: `shared-${question.id}`, sharedPublication: true, type: '常见问答', title: question.title, category: question.category, department: question.department, date: question.answeredAt || question.submittedAt, summary: question.answer, answer: question.answer });
 }
-function render() { syncPrototypeData(); byId('app').innerHTML = state.view === 'workspace' && state.session ? renderWorkspace() : renderAuth(); const mobileStaffView = state.view === 'workspace' && state.session?.role === 'staff' && state.staffDisplayMode === 'mobile'; const knowledgeView = !mobileStaffView && state.view === 'workspace' && state.session?.role === 'staff' && ['policy', 'notices'].includes(state.workspaceView); const personalView = !mobileStaffView && state.view === 'workspace' && state.session?.role === 'staff' && state.workspaceView === 'profile'; document.documentElement.classList.toggle('mobile-staff-view', mobileStaffView); document.documentElement.classList.toggle('knowledge-view', knowledgeView); document.documentElement.classList.toggle('personal-view', personalView); document.body.classList.toggle('modal-open', Boolean(state.rankModal || state.policyDetailId || state.bannerDetail || state.postComposerOpen || state.personalEditOpen || state.progressListOpen || state.personalProgressId !== null || state.personalFavoriteIndex !== null || state.interactionDetail !== null)); window.lucide?.createIcons?.(); }
+function render() { syncPrototypeData(); byId('app').innerHTML = state.view === 'workspace' && state.session ? renderWorkspace() : renderAuth(); const mobileStaffView = state.view === 'workspace' && state.session?.role === 'staff' && state.staffDisplayMode === 'mobile'; const knowledgeView = !mobileStaffView && state.view === 'workspace' && state.session?.role === 'staff' && ['policy', 'notices'].includes(state.workspaceView); const personalView = !mobileStaffView && state.view === 'workspace' && state.session?.role === 'staff' && state.workspaceView === 'profile'; document.documentElement.classList.toggle('mobile-staff-view', mobileStaffView); document.documentElement.classList.toggle('knowledge-view', knowledgeView); document.documentElement.classList.toggle('personal-view', personalView); document.body.classList.toggle('modal-open', Boolean(state.rankModal || state.policyDetailId || (state.noticeDetailId && !mobileStaffView) || state.bannerDetail || state.postComposerOpen || state.policyQuestionOpen || state.myPolicyQuestionsOpen || state.personalEditOpen || state.progressListOpen || state.personalProgressId !== null || state.personalFavoriteIndex !== null || state.interactionDetail !== null)); window.lucide?.createIcons?.(); }
 let noticeCarouselTimer;
 function startNoticeCarousel() {
   clearInterval(noticeCarouselTimer);
@@ -793,6 +849,7 @@ window.AppPrototype = {
     setState({ editingPostId: post.id, postComposerOpen: true, personalProgressId: null, progressListOpen: false });
   },
   setPersonalTab(personalTab) { setState({ personalTab, interactionDetail: null }); },
+  setPersonalInteractionCategory(personalInteractionCategory) { setState({ personalInteractionCategory, interactionDetail: null }); },
   openInteractionDetail(index) { setState({ interactionDetail: index }); },
   openInteractionSource(postId) { const post = portalPosts.find((item) => item.id === postId); if (!post) return showToast('原帖暂不可查看。'); setState({ interactionDetail: null, workspaceView: 'voices', portalTab: post.board, expandedPostId: post.id }); },
   closeInteractionDetail(event) { if (event && event.target !== event.currentTarget) return; setState({ interactionDetail: null }); },
@@ -804,10 +861,28 @@ window.AppPrototype = {
   togglePersonalPost(id) { setState({ personalExpandedPostId: state.personalExpandedPostId === id ? null : id }); },
   formatPost(command, value = null) { document.execCommand(command, false, value); byId('new-post-body')?.focus(); },
   searchPolicy(event) { event?.preventDefault(); const value = byId('policy-search')?.value.trim(); showToast(value ? `已为你检索“${value}”（原型演示）。` : '请输入政策、问题或关键词。'); },
+  openPolicyQuestion() { setState({ policyQuestionOpen: true, myPolicyQuestionsOpen: false }); },
+  closePolicyQuestion(event) { if (event && event.target !== event.currentTarget) return; setState({ policyQuestionOpen: false }); },
+  openMyPolicyQuestions() { setState({ myPolicyQuestionsOpen: true, policyQuestionOpen: false }); },
+  closeMyPolicyQuestions(event) { if (event && event.target !== event.currentTarget) return; setState({ myPolicyQuestionsOpen: false }); },
+  submitPolicyQuestion() {
+    const title = byId('policy-question-title-input')?.value.trim();
+    const category = byId('policy-question-category')?.value || '其他';
+    const body = byId('policy-question-body')?.value.trim();
+    if (!title || !body) return showToast('请填写问题标题和问题描述。');
+    const data = PrototypeData.read();
+    data.questions = Array.isArray(data.questions) ? data.questions : [];
+    data.questions.unshift({ id: `question-${Date.now()}`, title, category, department: '待分办', answer: '', body, status: '待答复', submittedAt: new Date().toLocaleDateString('sv-SE'), answeredAt: '', authorId: state.session.id, authorName: byId('policy-question-anonymous')?.checked ? '匿名职工' : state.session.name, anonymous: Boolean(byId('policy-question-anonymous')?.checked), sourceType: '职工提问', needRectification: false, rectificationId: '' });
+    PrototypeData.save(data);
+    setState({ policyQuestionOpen: false });
+    showToast('问题已提交，等待相关部门答复。');
+  },
   searchPolicyTerm(term) { const input = byId('policy-search'); if (input) input.value = term; showToast(`已为你检索“${term}”（原型演示）。`); },
   readNotice(id) { if (state.noticeRead[id]) return; setState({ noticeRead: { ...state.noticeRead, [id]: true } }); showToast('通知已标记为已读。'); },
-  openNotice(id) { const notice = homeNotices.find((item) => item.id === id); if (!notice) return; const noticeRead = { ...state.noticeRead, [id]: true }; if (state.staffDisplayMode === 'mobile' && state.workspaceView === 'notices') { setState({ noticeRead, noticeDetailId: id }); window.scrollTo(0, 0); return; } setState({ noticeRead }); showToast(`已打开“${notice.title}”。`); },
-  closeNoticeDetail() { setState({ noticeDetailId: null }); window.scrollTo(0, 0); },
+  openNotice(id) { const notice = homeNotices.find((item) => item.id === id); if (!notice) return; setState({ noticeRead: { ...state.noticeRead, [id]: true }, noticeDetailId: id }); if (state.staffDisplayMode === 'mobile') window.scrollTo(0, 0); },
+  closeNoticeDetail(event) { if (event && event.target !== event.currentTarget) return; setState({ noticeDetailId: null }); if (state.staffDisplayMode === 'mobile') window.scrollTo(0, 0); },
+  previewNoticeFile(id) { openNoticeFile(id, false); },
+  downloadNoticeFile(id) { openNoticeFile(id, true); },
   markAllNoticesRead() { if (homeNotices.every((notice) => state.noticeRead[notice.id])) return showToast('通知已全部读完。'); setState({ noticeRead: Object.fromEntries(homeNotices.map((notice) => [notice.id, true])) }); showToast('已将全部通知标记为已读。'); },
   openPolicyDetail(policyDetailId) { setState({ policyDetailId }); if (state.staffDisplayMode === 'mobile') requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'auto' })); },
   closePolicyDetail(event) { if (event && event.target !== event.currentTarget) return; setState({ policyDetailId: null }); if (state.staffDisplayMode === 'mobile') requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'auto' })); },
@@ -918,7 +993,7 @@ window.AppPrototype = {
   setWorkspaceView(workspaceView) { setState({ workspaceView, rankModal: null, policyDetailId: null }); },
   openSearchResult(type, id) { const panel = byId('staff-search-results'); if (panel) panel.hidden = true; if (type === '政策') return setState({ workspaceView: 'policy', policyDetailId: null }); setState({ workspaceView: 'voices', expandedPostId: Number.isNaN(Number(id)) ? id : Number(id) }); },
   toggleProfileMenu() { setState({ profileOpen: !state.profileOpen }); },
-  profileAction(action) { if (action === 'logout') return this.logout(); setState({ profileOpen: false, accountCenterOpen: true, accountCenterTab: 'basic' }); },
+  profileAction(action) { if (action === 'logout') return this.logout(); setState({ profileOpen: false, accountCenterOpen: false, workspaceView: 'profile', personalTab: 'posts' }); },
   closeAccountCenter(event) { if (event && event.target !== event.currentTarget) return; setState({ accountCenterOpen: false }); },
   setAccountCenterTab(tab) { setState({ accountCenterTab: ['basic','security','devices'].includes(tab) ? tab : 'basic' }); },
   saveAccountCenter() { const name = byId('account-center-name')?.value.trim(); if (!name) return showToast('请填写用户昵称'); const data = PrototypeData.read(), shared = data.accounts.find((item) => item.id === state.session.id); state.session.name = name; state.session.gender = document.querySelector('input[name="account-center-gender"]:checked')?.value || '未知'; if (shared) { shared.name = name; shared.gender = state.session.gender; PrototypeData.save(data); } setState({ accountCenterOpen: false }); showToast('个人信息已更新'); },
@@ -936,7 +1011,7 @@ document.addEventListener('click', (event) => {
   const index = row ? [...row.parentElement.children].indexOf(row) : -1;
   if (index >= 0) setState({ personalFavoriteIndex: index });
 });
-document.addEventListener('keydown', (event) => { if (event.key !== 'Escape') return; if (state.postComposerOpen) return setState({ postComposerOpen: false, editingPostId: null }); if (state.personalFavoriteIndex !== null) return setState({ personalFavoriteIndex: null }); if (state.interactionDetail !== null) return setState({ interactionDetail: null }); if (state.personalProgressId !== null) return setState({ personalProgressId: null }); if (state.progressListOpen) return setState({ progressListOpen: false }); if (state.policyDetailId) return setState({ policyDetailId: null }); if (state.rankModal) return setState({ rankModal: null }); });
+document.addEventListener('keydown', (event) => { if (event.key !== 'Escape') return; if (state.noticeDetailId) return setState({ noticeDetailId: null }); if (state.postComposerOpen) return setState({ postComposerOpen: false, editingPostId: null }); if (state.personalFavoriteIndex !== null) return setState({ personalFavoriteIndex: null }); if (state.interactionDetail !== null) return setState({ interactionDetail: null }); if (state.personalProgressId !== null) return setState({ personalProgressId: null }); if (state.progressListOpen) return setState({ progressListOpen: false }); if (state.policyDetailId) return setState({ policyDetailId: null }); if (state.rankModal) return setState({ rankModal: null }); });
 render();
 startNoticeCarousel();
 startAffairCarousel();
