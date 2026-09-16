@@ -91,6 +91,33 @@
     shareChannels: { copy: 0, internal: 0, system: 0 },
     daily: []
   });
+  const nonPublicPostStatuses = new Set(['私密发布', '待审核', '退回修改', '已驳回', '已隐藏', '已反馈', '已私密回复', '已办结私密', '办理中', '待复核', '已处理-分办审核']);
+  function isPublicPost(post) {
+    return Boolean(post) && post.enabled !== false && post.deleted !== true && !nonPublicPostStatuses.has(post.status)
+      && (!['建言献策', '心声诉求'].includes(post.board) || !post.processingAccepted || post.status === '已办结公开');
+  }
+  function isPublicEcho(publication, data) {
+    if (publication?.status !== '已发布') return false;
+    const source = data.posts.find((post) => String(post.id) === String(publication.sourcePostId));
+    return !source || !['建言献策', '心声诉求'].includes(source.board) || isPublicPost(source);
+  }
+  function reconcileProcessingPosts(data) {
+    let changed = false;
+    for (const affair of data.affairs) {
+      const post = data.posts.find((item) => String(item.id) === String(affair.postId));
+      if (!post || !['建言献策', '心声诉求'].includes(post.board) || post.processingAccepted) continue;
+      post.processingAccepted = true;
+      if (['待承办确认', '转办待接收', '办理中', '待复核'].includes(affair.status)) post.status = affair.status === '待复核' ? '已处理-分办审核' : '办理中';
+      if (['已反馈', '已办结'].includes(affair.status)) {
+        affair.status = '已办结';
+        post.status = affair.feedback === '公开答复' ? '已办结公开' : '已办结私密';
+        post.replyVisibility = affair.feedback === '公开答复' ? '公开可见' : '仅个人可见';
+        post.reply = affair.draft || '';
+      }
+      changed = true;
+    }
+    return changed;
+  }
   const engagementSeeds = {
     1: { views: 326, uniqueViews: 248, likes: 42, favorites: 16, shares: 9, historicComments: 18 },
     2: { views: 241, uniqueViews: 190, likes: 27, favorites: 9, shares: 5, historicComments: 9 },
@@ -162,6 +189,65 @@
   const mockQuestions = questionTitles.map((title, index) => ({ id: `QUESTION-MOCK-${String(index + 1).padStart(3, '0')}`, title, category: ['项目申报', '业务办理', '数据管理', '平台使用'][index % 4], department: ['经济发展处', '合作指导处', '信息中心', '平台管理组'][index % 4], answer: index < 7 ? `关于“${title}”，请按照现行制度准备相关材料，经所属部门审核后通过规定流程提交，具体以最新通知为准。` : '', status: index < 7 ? '已发布' : '待答复', submittedAt: `2026-09-${String(13 - index).padStart(2, '0')}`, answeredAt: index < 7 ? `2026-09-${String(14 - index).padStart(2, '0')}` : '' }));
   const echoTitles = ['关于基层项目申报材料共享建议的答复', '关于职工培训报名流程优化的答复', '关于农产品品牌联合推广建议的答复', '关于县域配送线路公示建议的答复', '关于青年职工交流活动建议的答复', '关于再生资源网点运营问题的答复', '关于采购信息模板统一建议的答复', '关于职工书屋服务建议的答复', '关于项目台账整理问题的答复', '关于数字化工具培训建议的答复', '关于会议室预约流程建议的答复', '关于县域流通网络建设问题的答复', '关于政策答疑协作机制建议的答复', '关于困难职工帮扶指引的答复', '关于冷链仓储安全检查问题的答复', '关于供销品牌展示活动建议的答复', '关于差旅报销材料清单的答复', '关于基层社电商运营问题的答复', '关于重点项目进度共享建议的答复', '关于职工意见反馈闭环建议的答复'];
   const mockEchoPublications = echoTitles.map((title, index) => ({ id: `ECHO-MOCK-${String(index + 1).padStart(3, '0')}`, affairId: `SX-MOCK-${String(index + 1).padStart(3, '0')}`, sourcePostId: 1001 + index, title, body: `针对相关职工建议，责任部门已完成情况核实并形成改进措施。后续将按计划推进落实，并通过平台持续反馈办理进展。`, scope: ['全体职工', '省社本级', '直属企业'][index % 3], status: index % 7 === 6 ? '已撤回' : '已发布', publishedAt: `09月${String(14 - Math.floor(index / 3)).padStart(2, '0')}日 ${String(9 + index % 7).padStart(2, '0')}:10`, engagement: { ...emptyEngagement(), views: 120 + index * 19, uniqueViews: 90 + index * 14, likes: 8 + index * 2, favorites: 3 + index % 8, shares: 2 + index % 5, historicComments: 4 + index % 10 } }));
+  const processMockPosts = mockPosts.filter((post) => ['建言献策', '心声诉求'].includes(post.board));
+  const mockAffairs = processMockPosts.map((post, index) => {
+    const departments = ['经济发展处', '办公室', '合作指导处'];
+    const people = [['handler', '陈凯'], ['handler-office', '刘敏'], ['handler-cooperation', '周磊']];
+    const statuses = ['待承办确认', '转办待接收', '办理中', '办理中', '待复核', '已反馈', '已办结'];
+    const status = statuses[index % statuses.length];
+    const person = people[index % people.length];
+    const deadline = `2026-09-${String(16 + (index % 12)).padStart(2, '0')}`;
+    const affair = { id: `SX-MOCK-${String(index + 1).padStart(3, '0')}`, postId: post.id, title: post.title, owner: departments[index % departments.length], initialOwner: departments[index % departments.length], co: departments[(index + 1) % departments.length], deadline, priority: index % 5 === 0 ? '紧急' : index % 3 === 0 ? '重点' : '一般', feedback: index % 4 === 0 ? '私密回复' : '公开答复', status, assignmentState: status, assigneeId: person[0], assigneeName: person[1], requirements: '请核实具体情况，形成办理措施并按时提交答复。', stage: status === '已办结' ? '形成正式答复' : ['调查核实', '制定措施', '等待协同反馈'][index % 3], progress: status === '待承办确认' ? '' : `已完成第 ${index % 3 + 1} 阶段核实，正在整理办理意见。`, draft: ['待复核', '已反馈', '已办结'].includes(status) ? `关于${post.title}的办理答复：已完成情况核实并提出改进措施。` : '', extension: null, returnReason: status === '办理中' && index % 6 === 0 ? '请补充协同部门反馈和完成时限。' : '', transfer: status === '转办待接收' ? { status: '待接收', fromDepartment: departments[index % departments.length], fromAssigneeId: person[0], fromAssigneeName: person[1], toDepartment: departments[(index + 1) % departments.length], toAssigneeId: people[(index + 1) % people.length][0], toAssigneeName: people[(index + 1) % people.length][1], reason: '根据事项职责范围转请相关部门办理。', at: '2026-09-14 09:20' } : null, events: [{ text: `已分办至${departments[index % departments.length]}`, at: `09月${String(14 - index % 5).padStart(2, '0')} 09:20` }, ...(status !== '待承办确认' ? [{ text: `${person[1]}已确认接收办理`, at: '2026-09-14 10:10' }] : [])] };
+    return affair;
+  });
+  // POST-FLOW-I/V/E: overdue derives from deadline; exchange cases never create affairs.
+  const flowCases = [
+    { id: 'POST-FLOW-I-01', board: '建言献策', title: '基层网点供需清单共享建议', body: '建议按地区和品类汇总基层网点的农产品供需清单，定期更新联系人和有效期。', status: '待审核', at: '2026-09-14 09:20' },
+    { id: 'POST-FLOW-I-02', board: '建言献策', title: '项目申报材料共享范围建议', body: '建议将已公开的申报模板按项目类型整理，避免各单位反复索取历史表格。', status: '已驳回', reason: '请明确拟共享材料的来源和可公开范围，避免包含内部审批附件。', at: '2026-09-13 10:15' },
+    { id: 'POST-FLOW-I-03', board: '建言献策', title: '跨区域品牌推广活动协作建议', body: '建议联合市州社开展品牌推广，统一报名表、活动日程和效果统计口径。', status: '办理中', at: '2026-09-12 09:10', affair: { owner: '合作指导处', assigneeId: 'handler-cooperation', assigneeName: '周磊', deadline: '2026-09-25', stage: '制定措施', progress: '已与两个市州社沟通活动时间，正在拟定协作方案。' } },
+    { id: 'POST-FLOW-I-04', board: '建言献策', title: '农产品采购需求更新频率建议', body: '建议采购需求每周更新一次，并标明需求变更时间，方便基层网点及时供货。', status: '办理中', at: '2026-09-11 08:30', affair: { owner: '经济发展处', assigneeId: 'handler', assigneeName: '陈凯', deadline: '2026-09-12', stage: '等待协同反馈', progress: '已收集采购部门意见，仍待确定统一更新频率。' } },
+    { id: 'POST-FLOW-I-05', board: '建言献策', title: '社有企业经验案例库建设建议', body: '建议汇总社有企业的经营案例，并建立分类检索和年度更新机制。', status: '已处理-分办审核', at: '2026-09-10 11:40', affair: { owner: '合作指导处', assigneeId: 'handler-cooperation', assigneeName: '周磊', deadline: '2026-09-20', stage: '形成正式答复', progress: '案例目录和维护规则已完成。', draft: '已确定案例库首批收录范围，并安排专人按季度核对更新。' } },
+    { id: 'POST-FLOW-I-06', board: '建言献策', title: '县域冷链验收影像归档建议', body: '建议为县域冷链验收制定影像资料目录，统一现场照片的命名和归档要求。', status: '已办结公开', at: '2026-09-09 14:00', affair: { owner: '经济发展处', assigneeId: 'handler', assigneeName: '陈凯', deadline: '2026-09-18', draft: '已发布冷链验收影像资料目录，明确拍摄节点、命名规则和归档责任。', feedback: '公开答复' } },
+    { id: 'POST-FLOW-I-07', board: '建言献策', title: '直属企业内部台账复用建议', body: '建议在直属企业内部复用经过审批的项目台账字段，减少重复填报。', status: '已办结私密', at: '2026-09-08 09:45', affair: { owner: '办公室', assigneeId: 'handler-office', assigneeName: '刘敏', deadline: '2026-09-17', draft: '已向提交人提供内部台账调整方案和适用单位名单。', feedback: '私密回复' } },
+    { id: 'POST-FLOW-V-01', board: '心声诉求', title: '机关办公区午间休息空间需求', body: '近期午间休息空间不足，希望核实空闲会议室是否可在规定时段开放。', status: '待审核', at: '2026-09-14 10:40' },
+    { id: 'POST-FLOW-V-02', board: '心声诉求', title: '职工体检预约时间冲突反馈', body: '部分岗位需要值班，希望允许按批次调整体检预约时间。', status: '已驳回', reason: '请补充预约批次和冲突日期，便于核实调整。', at: '2026-09-13 15:35' },
+    { id: 'POST-FLOW-V-03', board: '心声诉求', title: '机关食堂餐食标识不清反馈', body: '希望在供餐区标注主要原料和适用人群，方便有饮食限制的职工选择。', status: '办理中', at: '2026-09-12 14:25', affair: { owner: '办公室', assigneeId: 'handler-office', assigneeName: '刘敏', deadline: '2026-09-23', stage: '调查核实', progress: '已与机关服务中心核对当前标识，正在整理补充方案。' } },
+    { id: 'POST-FLOW-V-04', board: '心声诉求', title: '基层社培训报名反馈滞后', body: '提交培训报名后一直未收到确认，希望及时说明审核结果和候补安排。', status: '办理中', at: '2026-09-11 16:10', affair: { owner: '办公室', assigneeId: 'handler-office', assigneeName: '刘敏', deadline: '2026-09-11', stage: '等待协同反馈', progress: '已核对报名名单，正在等待培训组织方确认候补人数。' } },
+    { id: 'POST-FLOW-V-05', board: '心声诉求', title: '职工通勤线路调整反馈', body: '希望核查部分站点的班车到站时间，并优化晚间通勤线路。', status: '已处理-分办审核', at: '2026-09-10 09:35', affair: { owner: '办公室', assigneeId: 'handler-office', assigneeName: '刘敏', deadline: '2026-09-19', stage: '形成正式答复', progress: '线路调查已结束。', draft: '拟调整晚班车经停站点，并在试运行后收集职工反馈。' } },
+    { id: 'POST-FLOW-V-06', board: '心声诉求', title: '职工书屋借阅时段调整请求', body: '建议延长每周两天的借阅时段，让外勤岗位职工也能使用职工书屋。', status: '已办结公开', at: '2026-09-09 10:05', affair: { owner: '办公室', assigneeId: 'handler-office', assigneeName: '刘敏', deadline: '2026-09-18', draft: '职工书屋周二、周四借阅时间已延长至 18:30，并向全体职工公告。', feedback: '公开答复' } },
+    { id: 'POST-FLOW-V-07', board: '心声诉求', title: '个人帮扶申请材料咨询', body: '希望了解帮扶申请的证明材料和个人信息的保密处理方式。', status: '已办结私密', at: '2026-09-08 13:20', affair: { owner: '办公室', assigneeId: 'handler-office', assigneeName: '刘敏', deadline: '2026-09-16', draft: '已向提交人单独说明材料清单和保密提交渠道。', feedback: '私密回复' } },
+    { id: 'POST-FLOW-E-01', board: '业务交流', title: '农资集配订单核对方法交流', body: '分享订单、出库和签收三个节点的对账经验，欢迎补充不同网点的做法。', status: '待审核', at: '2026-09-14 11:25' },
+    { id: 'POST-FLOW-E-02', board: '业务交流', title: '冷链设备巡检经验分享', body: '整理冷链设备的日常巡检步骤和故障登记方式，供项目组参考。', status: '已驳回', reason: '请删除未经确认的设备编号，并补充适用项目范围后重新提交。', at: '2026-09-13 09:55' },
+    { id: 'POST-FLOW-E-03', board: '业务交流', title: '县域配送车辆调度复盘', body: '根据驳回意见删去了内部车辆信息，补充了调度节点和沟通顺序。', status: '待审核', at: '2026-09-12 10:30', history: [{ text: '因包含内部车辆编号被驳回', at: '09/11 16:20' }, { text: '原帖修改后重新提交', at: '09/12 10:30' }] },
+    { id: 'POST-FLOW-E-04', board: '业务交流', title: '再生资源回收网点分类运营案例', body: '介绍网点按回收品类分区、每周复盘库存和错峰调度的具体做法。', status: '已发布', at: '2026-09-10 15:20', history: [{ text: '分办人员审核通过，原帖公开发布', at: '09/11 09:40' }] }
+  ];
+  const flowPosts = flowCases.map((item) => ({
+    id: item.id, board: item.board, title: item.title, body: item.body, status: item.status,
+    reason: item.reason || '', author: '张晓雨', authorId: 'staff', publicationMode: 'real',
+    processingAccepted: Boolean(item.affair), replyVisibility: item.affair?.feedback === '公开答复' ? '公开可见' : item.affair?.feedback === '私密回复' ? '仅个人可见' : '',
+    createdAt: item.id === 'POST-FLOW-E-03' ? '2026-09-11 14:00' : item.at, updatedAt: item.at,
+    time: `${item.at.slice(5, 7)}/${item.at.slice(8, 10)} ${item.at.slice(11, 16)}`,
+    history: item.history || (item.reason ? [{ text: `分办人员驳回：${item.reason}`, at: `${item.at.slice(5, 7)}/${item.at.slice(8, 10)} 17:10` }] : item.affair ? [{ text: '分办人员确认需要办理', at: `${item.at.slice(5, 7)}/${item.at.slice(8, 10)} 17:00` }] : []),
+    risk: '低风险', sensitiveHits: [], allowComments: true, enabled: true, deleted: false, engagement: emptyEngagement()
+  }));
+  const flowAffairs = flowCases.filter((item) => item.affair).map((item) => {
+    const detail = item.affair, closed = Boolean(detail.feedback), review = item.status === '已处理-分办审核';
+    const submittedDay = `${item.at.slice(5, 7)}/${item.at.slice(8, 10)}`;
+    return {
+      id: `SX-FLOW-${item.id.slice(-4)}`, postId: item.id, title: item.title,
+      owner: detail.owner, initialOwner: detail.owner, assigneeId: detail.assigneeId, assigneeName: detail.assigneeName,
+      deadline: detail.deadline, priority: '一般', requirements: `核实“${item.title}”并形成办理结果。`,
+      feedback: detail.feedback || '', status: closed ? '已办结' : review ? '待复核' : '办理中',
+      assignmentState: closed ? '已办结' : review ? '待复核' : '办理中',
+      stage: detail.stage || (closed ? '形成正式答复' : '调查核实'), progress: detail.progress || '', draft: detail.draft || '',
+      extension: null, transfer: null, events: [
+        { text: `已交由${detail.assigneeName}办理`, at: `${submittedDay} 17:00` },
+        ...(detail.progress ? [{ text: detail.progress, at: `${submittedDay} 18:20` }] : []),
+        ...(review ? [{ text: '承办结果已提交，等待分办审核', at: '09/14 09:10' }] : []),
+        ...(closed ? [{ text: `分办审核通过并办结 · ${detail.feedback}`, at: '09/15 10:30' }] : [])
+      ]
+    };
+  });
   const bannerImages = [
     'https://images.unsplash.com/photo-1464226184884-fa280b87c399?auto=format&fit=crop&w=1200&q=76',
     'https://images.unsplash.com/photo-1500076656116-558758c991c1?auto=format&fit=crop&w=1200&q=76',
@@ -181,16 +267,20 @@
     }
   }
   const initial = () => ({
+    flowFixtureVersion: 2,
     posts: [
       { id: 1, title: '建议建立农产品产销信息跨单位共享机制', board: '建言献策', author: '山野微风', status: '已发布', risk: '低风险', body: '建议由合作指导处牵头建立按周更新的农产品供需清单，统一品类、数量、交付区域和有效期。', time: '09月11日 09:24' },
       { id: 2, title: '关于优化机关食堂晚餐供应时段的建议', board: '心声诉求', author: '一盏清茶', status: '已发布', risk: '需核验', body: '希望结合实际用餐数据适当调整晚餐时段。', time: '09月11日 08:47' },
       { id: 3, title: '县域冷链项目验收资料整理经验分享', board: '业务交流', author: '江城行者', status: '已发布', risk: '低风险', sensitiveHits: [], body: '分享县域冷链项目验收材料目录和常见退回原因。', time: '09月10日 11:06' },
       { id: 15, title: '关于基层网点联系方式展示的意见', board: '心声诉求', author: '匿名用户', status: '待审核', risk: '个人信息', sensitiveHits: ['个人信息'], body: '建议完善基层网点联系方式展示规则，并注意保护个人信息。', time: '09月10日 09:10' },
       ...demoReviewPosts,
+      ...flowPosts,
       ...mockPosts.slice(0, 13)
     ].map((post) => ({ ...post, enabled: true, deleted: false, engagement: seededEngagement(post.id) })),
     affairs: [
-      { id: 'SX-202609-079', postId: 2, title: '关于优化机关食堂晚餐供应时段的建议', owner: '办公室', co: '机关服务中心', deadline: '2026-09-18', priority: '一般', feedback: '公开答复', status: '办理中', stage: '调查核实', requirements: '核实晚餐实际用餐量并提出调整方案。', progress: '正在结合用餐数据研究调整方案', draft: '', extension: null, events: [{ text: '已分办至办公室', at: '09月11日 10:12' }] }
+      { id: 'SX-202609-079', postId: 2, title: '关于优化机关食堂晚餐供应时段的建议', owner: '办公室', co: '机关服务中心', deadline: '2026-09-18', priority: '一般', feedback: '公开答复', status: '办理中', stage: '调查核实', requirements: '核实晚餐实际用餐量并提出调整方案。', progress: '正在结合用餐数据研究调整方案', draft: '', extension: null, events: [{ text: '已分办至办公室', at: '09月11日 10:12' }] },
+      ...flowAffairs,
+      ...mockAffairs
     ],
     comments: demoComments.map((item) => ({ ...item })), reports: demoReports.map((item) => ({ ...item })), notices: mockNotices.map((item) => ({ ...item })), banners: mockBanners.map((item) => ({ ...item })), rectifications: [],
     policies: [
@@ -323,11 +413,16 @@
         raw.boards.forEach((board, index) => {
           if (!Number.isInteger(board.sort) || board.sort < 1) { board.sort = index + 1; dataChanged = true; }
         });
+        if (raw.flowFixtureVersion !== 2) {
+          for (const post of flowPosts) if (!raw.posts.some((item) => String(item.id) === post.id)) raw.posts.push({ ...post });
+          for (const affair of flowAffairs) if (!raw.affairs.some((item) => String(item.id) === affair.id)) raw.affairs.push({ ...affair });
+          raw.flowFixtureVersion = 2;
+          dataChanged = true;
+        }
         for (const post of raw.posts) {
           if (!Object.hasOwn(post, 'enabled')) { post.enabled = true; dataChanged = true; }
           if (!Object.hasOwn(post, 'deleted')) { post.deleted = false; dataChanged = true; }
           if (!Array.isArray(post.sensitiveHits) && post.risk === '个人信息') { post.sensitiveHits = ['个人信息']; dataChanged = true; }
-          if (post.status === '待审核' && post.risk === '低风险' && !post.protectedListId && !post.sensitiveHits?.length) { post.status = '已发布'; dataChanged = true; }
           const before = JSON.stringify(post.engagement || null);
           ensureEngagement(post);
           if (JSON.stringify(post.engagement) !== before) dataChanged = true;
@@ -363,13 +458,14 @@
           if (!Array.isArray(affair.events)) { affair.events = []; dataChanged = true; }
         }
         for (const field of ['roles', 'menus', 'dictionaryTypes', 'dictionaryEntries', 'loginLogs', 'policies', 'questions', 'notices', 'banners', 'echoPublications']) if (!Array.isArray(raw[field])) { raw[field] = defaults[field]; dataChanged = true; }
-        const countsBefore = [raw.posts.length, raw.notices.length, raw.policies.length, raw.questions.length, raw.banners.length, raw.echoPublications.length].join(':');
+        const countsBefore = [raw.posts.length, raw.affairs.length, raw.notices.length, raw.policies.length, raw.questions.length, raw.banners.length, raw.echoPublications.length].join(':');
         appendUntil(raw.posts, mockPosts, (post) => post.deleted !== true && ['私密发布', '已发布', '已受理', '已隐藏'].includes(post.status));
         appendUntil(raw.notices, mockNotices, () => true);
         appendUntil(raw.policies, mockPolicies, () => true, 10);
         appendUntil(raw.questions, mockQuestions, () => true, 10);
         appendUntil(raw.banners, mockBanners, () => true);
         appendUntil(raw.echoPublications, mockEchoPublications, () => true);
+        appendUntil(raw.affairs, mockAffairs, () => true);
         for (const notice of raw.notices) {
           if (notice.status !== '已发布') { notice.status = '已发布'; dataChanged = true; }
           const targetCount = noticeAudience[notice.scope] || noticeAudience['全体职工'];
@@ -381,7 +477,12 @@
           const current = raw.posts.find((post) => post.id === candidate.id);
           if (current?.status === '已发布' && !raw.audit.some((event) => String(event.target) === String(current.id))) { current.status = '私密发布'; dataChanged = true; }
         }
-        if ([raw.posts.length, raw.notices.length, raw.policies.length, raw.questions.length, raw.banners.length, raw.echoPublications.length].join(':') !== countsBefore) dataChanged = true;
+        if ([raw.posts.length, raw.affairs.length, raw.notices.length, raw.policies.length, raw.questions.length, raw.banners.length, raw.echoPublications.length].join(':') !== countsBefore) dataChanged = true;
+        if (reconcileProcessingPosts(raw)) dataChanged = true;
+        for (const affair of raw.affairs) {
+          const post = raw.posts.find((item) => String(item.id) === String(affair.postId));
+          if (affair.status === '待复核' && post?.processingAccepted && ['建言献策', '心声诉求'].includes(post.board) && post.status === '待复核') { post.status = '已处理-分办审核'; dataChanged = true; }
+        }
         for (const post of raw.posts) ensureEngagement(post);
         for (const publication of raw.echoPublications) ensureEngagement(publication);
         for (const account of raw.accounts || []) {
@@ -445,6 +546,7 @@
       }
     } catch (_) { /* Invalid demo data starts from the seed. */ }
     const data = initial();
+    reconcileProcessingPosts(data);
     localStorage.setItem(key, JSON.stringify(data));
     return data;
   }
@@ -452,9 +554,25 @@
     read,
     emptyEngagement,
     ensureEngagement,
+    isPublicPost,
+    isPublicEcho,
     save(data) { localStorage.setItem(key, JSON.stringify(data)); window.dispatchEvent(new Event('prototype-data-changed')); },
-    reset() { const data = initial(); this.save(data); return data; },
+    reset() { const data = initial(); reconcileProcessingPosts(data); this.save(data); return data; },
     postingBoards(data = read()) { return data.boards.filter((board) => board.enabled && board.staffPost); },
+    searchContent(query, data = read()) {
+      const keywords = String(query || '').normalize('NFKC').toLocaleLowerCase().split(/\s+/).filter(Boolean);
+      const items = [
+        ...(data.posts || []).filter(isPublicPost).map((item) => ({ type: '帖子', id: item.id, title: item.title, meta: `${item.board || ''} · ${item.author || ''}`, searchText: [item.title, item.body, item.board, item.author, item.id] })),
+        ...(data.policies || []).filter((item) => item.status === '已发布').map((item) => ({ type: '政策', id: item.id, title: item.title, meta: `${item.category || ''} · ${item.department || ''}`, searchText: [item.title, item.summary, item.body, item.category, item.department, item.id] }))
+      ];
+      return items.map((item, index) => {
+        const title = String(item.title || '').normalize('NFKC').toLocaleLowerCase();
+        const text = item.searchText.join(' ').normalize('NFKC').toLocaleLowerCase();
+        const matched = !keywords.length || keywords.every((word) => text.includes(word));
+        const score = keywords.reduce((total, word) => total + (title.includes(word) ? 4 : text.includes(word) ? 1 : 0), 0);
+        return { ...item, matched, score, index };
+      }).filter((item) => item.matched).sort((a, b) => b.score - a.score || a.index - b.index);
+    },
     flowFor(board, data = read()) { const item = data.flowConfigs?.find((flow) => flow.board === board); return item ? { ...item.published, board, version: item.version } : null; },
     blockedWord(content, scope, data = read()) {
       const normalized = String(content ?? '').normalize('NFKC').toLocaleLowerCase();

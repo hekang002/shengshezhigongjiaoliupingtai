@@ -47,13 +47,10 @@ const roleInfo = {
 };
 
 const handlerNav = [
-  ['handler-dashboard', '承办工作台', 'layout-dashboard'],
-  ['handler-tasks', '我的待办', 'inbox'],
-  ['handler-handling', '事项办理', 'clipboard-pen-line'],
-  ['handler-drafts', '答复草稿', 'file-pen-line'],
-  ['handler-reminders', '催办提醒', 'bell-ring'],
-  ['handler-answers', '已公开答复', 'badge-check'],
-  ['handler-statistics', '部门统计', 'chart-no-axes-combined']
+  ['handler-dashboard', '工作台与任务', 'layout-dashboard'],
+  ['handler-handling', '办理反馈', 'clipboard-pen-line'],
+  ['handler-messages', '草稿与通知', 'bell-ring'],
+  ['handler-answers', '已办事项', 'badge-check']
 ];
 const leaderNav = [
   ['leader-dashboard', '领导驾驶舱', 'chart-spline'],
@@ -67,20 +64,20 @@ const navByRole = {
     ['领导视图', leaderNav],
     ['数据分析', [['statistics', '数据统计', 'chart-no-axes-combined']]],
     ['内容管理', [['content-ledger', '信息台账管理', 'notebook-tabs'], ['announcements', '通知公告管理', 'megaphone'], ['policy', '政策与问答', 'book-open-check'], ['banners', '轮播图管理', 'images'], ['echo', '回音壁发布', 'badge-check']]],
-    ['事项办理', [['assignments', '问题登记与分办', 'git-pull-request-arrow'], ['handling', '办理管理', 'clipboard-check']]],
-    ['承办管理', handlerNav],
-    ['审核管理', [['user-review', '用户审核', 'user-round-check'], ['content-review', '信息发布审核', 'shield-check'], ['comments', '评论审核', 'message-square'], ['report-review', '举报核查', 'flag-triangle-right']]],
+    ['事项办理', [['content-review', '信息内容审核', 'shield-check'], ['handler-dispatch', '事项分办', 'git-pull-request-arrow'], ['handler-closure', '公开与归档', 'archive-check']]],
+    ['审核管理', [['user-review', '用户审核', 'user-round-check'], ['comments', '评论审核', 'message-square'], ['report-review', '举报核查', 'flag-triangle-right']]],
     ['配置管理', [['categories', '栏目管理', 'panels-top-left'], ['sensitive', '敏感词库', 'scan-text'], ['flow-config', '流程配置', 'workflow'], ['base-config', '基础配置', 'shield-check']]],
     ['系统设置', [['users', '用户管理', 'users'], ['organization', '组织架构', 'network'], ['permissions', '角色管理', 'key-round'], ['menu-management', '菜单管理', 'panels-top-left'], ['dictionary-management', '字典管理', 'book-open'], ['logs', '系统日志', 'scroll-text']]],
   ],
   content: [
     ['工作总览', [['dashboard', '运营工作台', 'gauge']]],
-    ['审核管理', [['content-review', '信息发布审核', 'shield-check'], ['comments', '评论审核', 'message-square'], ['report-review', '举报核查', 'flag-triangle-right']]],
+    ['审核管理', [['content-review', '信息内容审核', 'shield-check'], ['comments', '评论审核', 'message-square'], ['report-review', '举报核查', 'flag-triangle-right']]],
     ['内容管理', [['content-ledger', '信息台账管理', 'notebook-tabs'], ['announcements', '通知公告管理', 'megaphone'], ['policy', '政策与问答', 'book-open-check'], ['banners', '轮播图管理', 'images'], ['echo', '回音壁发布', 'badge-check']]],
     ['配置管理', [['categories', '栏目管理', 'panels-top-left'], ['sensitive', '敏感词库', 'scan-text']]],
   ],
   dispatch: [
-    ['事项办理', [['dashboard', '运营工作台', 'gauge'], ['assignments', '问题登记与分办', 'git-pull-request-arrow', '4'], ['handling', '全流程跟踪', 'clipboard-check'], ['rectifications', '整改台账', 'list-checks'], ['echo', '答复复核', 'badge-check']]],
+    ['工作总览', [['dashboard', '运营工作台', 'gauge']]],
+    ['事项办理', [['content-review', '发言确认与业务交流审核', 'shield-check'], ['handler-dispatch', '办理与回复审核', 'git-pull-request-arrow'], ['rectifications', '整改台账', 'list-checks']]],
     ['分析与协同', [['statistics', '办理统计', 'chart-no-axes-combined'], ['audit', '操作留痕', 'scroll-text']]],
   ],
   handler: [['承办管理', handlerNav]],
@@ -96,6 +93,16 @@ function showToast(message) {
   clearTimeout(showToast.timer);
   showToast.timer = setTimeout(() => el.classList.remove('show'), 2300);
 }
+const searchSafe = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+function renderGlobalSearchResults() {
+  const input = document.getElementById('global-search-keyword'), panel = document.getElementById('global-search-results');
+  if (!input || !panel) return;
+  const rows = window.PrototypeData?.searchContent(input.value) || [];
+  panel.hidden = false;
+  panel.innerHTML = rows.length ? `<div class="global-search-caption">${input.value.trim() ? `找到 ${rows.length} 条结果` : '默认展示最近内容'}</div>${rows.map((item) => `<button type="button" onmousedown="event.preventDefault();openGlobalSearchResult('${item.type}','${searchSafe(item.id)}')"><span class="global-search-type">${item.type}</span><span><strong>${searchSafe(item.title)}</strong><small>${searchSafe(item.meta)}</small></span>${icon('chevron-right')}</button>`).join('')}` : '<div class="global-search-empty">未找到匹配内容，请增加或调整关键词</div>';
+}
+function closeGlobalSearchResults() { setTimeout(() => { const panel = document.getElementById('global-search-results'); if (panel) panel.hidden = true; }, 120); }
+function openGlobalSearchResult(type) { const panel = document.getElementById('global-search-results'); if (panel) panel.hidden = true; go(type === '政策' ? 'policy' : 'content-ledger'); }
 
 function setState(next) { Object.assign(state, next); render(); }
 function logout() { sessionStorage.removeItem('prototype-handler-account-id'); sessionStorage.removeItem('prototype-management-account-id'); window.location.href = STAFF_APP_URL; }
@@ -138,7 +145,7 @@ function renderNav() {
   const data = window.PrototypeData?.read();
   const handlerAccountId = sessionStorage.getItem('prototype-handler-account-id');
   const handlerDept = (handlerAccountId ? data?.accounts.find((account) => account.id === handlerAccountId && account.role === 'handler' && account.status === 'approved') : data?.accounts.find((account) => account.role === 'handler' && account.status === 'approved'))?.department;
-  const counts = data ? { review: data.posts.filter((p) => p.status === '待审核').length, comments: new Set(data.comments.filter((c) => c.status === '待审核' && (c.sensitiveHits?.length || c.protectedListId)).map((c) => String(c.postId))).size, 'report-review': data.reports.filter((r) => r.status === '待核查').length, 'content-review': data.posts.filter((p) => p.status === '待审核' && (p.sensitiveHits?.length || p.risk === '个人信息' || p.protectedListId)).length, assignments: data.posts.filter((p) => ['建言献策', '心声诉求'].includes(p.board) && ['已发布', '私密发布', '待审核'].includes(p.status) && (p.flowSnapshot || PrototypeData.flowFor(p.board, data)) && !data.affairs.some((a) => a.postId === p.id)).length, 'handler-tasks': data.affairs.filter((a) => ['待承办确认', '转办待接收', '办理中'].includes(a.status) && (state.role !== 'handler' || a.owner === handlerDept || a.transfer?.toAssigneeId === handlerAccountId)).length, 'user-review': (data.accounts || []).filter((a) => a.status === 'pending').length } : {};
+  const counts = data ? { review: data.posts.filter((p) => p.board !== '业务交流' && p.status === '待审核').length, comments: new Set(data.comments.filter((c) => c.status === '待审核' && (c.sensitiveHits?.length || c.protectedListId)).map((c) => String(c.postId))).size, 'report-review': data.reports.filter((r) => r.status === '待核查').length, 'content-review': data.posts.filter((p) => ['建言献策', '心声诉求', '业务交流'].includes(p.board) && (state.role !== 'content' || p.board !== '业务交流') && ['私密发布', '待审核'].includes(p.status)).length, assignments: data.posts.filter((p) => ['建言献策', '心声诉求'].includes(p.board) && p.status === '已发布' && (p.flowSnapshot || PrototypeData.flowFor(p.board, data)) && !data.affairs.some((a) => a.postId === p.id)).length, 'handler-tasks': data.affairs.filter((a) => ['待承办确认', '转办待接收', '办理中'].includes(a.status) && (state.role !== 'handler' || a.owner === handlerDept || a.transfer?.toAssigneeId === handlerAccountId)).length, 'user-review': (data.accounts || []).filter((a) => a.status === 'pending').length } : {};
   const groupIcons = { '工作总览': 'layout-dashboard', '审核管理': 'user-round-check', '系统设置': 'settings-2', '内容管理': 'files', '事项办理': 'clipboard-list', '承办管理': 'briefcase-business', '整改与公开': 'badge-check', '内容运营': 'megaphone', '数据分析': 'chart-no-axes-combined', '配置管理': 'sliders-horizontal', '分析与协同': 'chart-no-axes-combined', '承办工作台': 'briefcase-business', '部门数据': 'folder-open', '领导视图': 'chart-spline' };
   return groups.map(([group, items], index) => {
     const expanded = state.expandedNavGroup === index;
@@ -152,7 +159,7 @@ function renderShell() {
   const info = roleInfo[state.role];
   const account = currentAccount();
   return `<div class="app-shell role-${state.role}">
-    <header class="topbar"><div class="topbar-brand"><div class="brand-seal"><span>湖北<br>供销</span></div><div><strong>湖北供销·心声</strong><small>管理工作台 · 统一权限视图</small></div></div><div class="topbar-center"><div class="global-search">${icon('search')}<input class="input" placeholder="搜索帖子、事项编号、组织或用户" onkeydown="if(event.key==='Enter')showToast('已提交全局检索')"></div></div><div class="top-actions"><div class="profile-wrap"><button class="profile-trigger" title="打开用户菜单" aria-haspopup="menu" aria-expanded="${state.profileOpen}" onclick="toggleProfileMenu()"><div class="avatar">${info.avatar}</div><span class="profile-name">${account.name}</span>${icon(state.profileOpen ? 'chevron-up' : 'chevron-down')}</button>${state.profileOpen ? `<div class="profile-menu" role="menu"><div class="profile-summary"><div class="avatar">${info.avatar}</div><div><strong>${account.name}</strong><small>${account.id}</small></div></div><button role="menuitem" onclick="profileAction('center')">${icon('user-round')}<span>个人中心</span></button><button class="profile-logout" role="menuitem" onclick="profileAction('logout')">${icon('log-out')}<span>退出登录</span></button></div>` : ''}</div></div></header>
+    <header class="topbar"><div class="topbar-brand"><div class="brand-seal"><span>湖北<br>供销</span></div><div><strong>湖北供销·心声</strong><small>管理工作台 · 统一权限视图</small></div></div><div class="topbar-center"><div class="global-search">${icon('search')}<input class="global-search-input" id="global-search-keyword" aria-label="全局搜索关键词" autocomplete="off" placeholder="输入关键词，多个关键词请用空格分隔" onfocus="renderGlobalSearchResults()" oninput="renderGlobalSearchResults()" onblur="closeGlobalSearchResults()"><div class="global-search-results" id="global-search-results" hidden></div></div></div><div class="top-actions"><div class="profile-wrap"><button class="profile-trigger" title="打开用户菜单" aria-haspopup="menu" aria-expanded="${state.profileOpen}" onclick="toggleProfileMenu()"><div class="avatar">${info.avatar}</div><span class="profile-name">${account.name}</span>${icon(state.profileOpen ? 'chevron-up' : 'chevron-down')}</button>${state.profileOpen ? `<div class="profile-menu" role="menu"><div class="profile-summary"><div class="avatar">${info.avatar}</div><div><strong>${account.name}</strong><small>${account.id}</small></div></div><button role="menuitem" onclick="profileAction('center')">${icon('user-round')}<span>个人中心</span></button><button class="profile-logout" role="menuitem" onclick="profileAction('logout')">${icon('log-out')}<span>退出登录</span></button></div>` : ''}</div></div></header>
     <aside class="sidebar">${renderNav()}<div class="sidebar-foot">当前数据范围：${state.role === 'handler' ? '所属部门主办事项' : '省社本级及授权组织'}<br>所有敏感操作均自动留痕</div></aside>
     <main class="main">${renderPage()}</main>
     ${renderModal()}
