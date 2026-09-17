@@ -241,6 +241,11 @@ button { cursor: pointer; }
 .ranking-close { width: 33px; height: 33px; flex: none; display: grid; place-items: center; border: 1px solid var(--line); color: var(--muted); background: #fff; }.ranking-close:hover { color: #fff; border-color: var(--role); background: var(--role); }
 .ranking-modal-list { overflow: auto; }.ranking-modal .ranking-item { min-height: 58px; grid-template-columns: 28px minmax(0, 1fr) 118px; padding: 9px 24px; }.ranking-modal .ranking-item > b { width: 24px; height: 24px; font-size: 11px; }.ranking-modal .rank-copy strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }.ranking-modal .rank-copy small { font-size: 10px; }.ranking-modal .rank-score em { font-size: 17px; }.ranking-modal .rank-score small { font-size: 9px; }
 .ranking-modal-foot { padding: 11px 24px; border-top: 1px solid var(--line); color: var(--muted); background: #fafbfa; font-size: 11px; text-align: right; }
+.ranking-detail-backdrop { z-index: 75; }
+.ranking-post-modal { width: min(820px, calc(100vw - 68px)); }
+.ranking-post-body { overflow-y: auto; padding: 0 24px 22px; background: #f7f8f7; }
+.ranking-post-body .portal-post-card { margin: 20px 0 0; border: 1px solid var(--line); background: #fff; }
+.ranking-post-modal .ranking-modal-foot button { min-width: 72px; }
 .post-compose-modal { width: min(620px, calc(100vw - 32px)); }
 .post-compose-fields { display: grid; gap: 17px; overflow: auto; padding: 22px 24px; }
 .post-compose-fields label { display: grid; gap: 7px; font-size: 12px; font-weight: 700; }
@@ -318,7 +323,7 @@ button { cursor: pointer; }
 .post-actions button.post-comments-disabled, .post-actions button.post-comments-disabled:hover { color: #a0a5a2; background: transparent; cursor: not-allowed; }
 .comment-zone { margin-top: 11px; border-top: 1px solid var(--line); background: #fafbfa; }.comment-list { padding: 0 13px; }.comment-list article { padding: 10px 0; border-bottom: 1px solid #e4e7e4; }.comment-list article:last-child { border-bottom: 0; }.comment-list article div { display: flex; align-items: center; gap: 7px; }.comment-list article strong { font-size: 12px; }.comment-list article p { margin: 3px 0 5px; color: #55595e; font-size: 12px; }.comment-list article button { padding: 0; border: 0; color: var(--role); background: transparent; font-size: 11px; }.comment-status { padding: 1px 5px; color: var(--green); border: 1px solid #b7dccb; font-size: 10px; }.comment-status.reviewing { color: #95631d; border-color: #e4c994; }
 .comment-compose { display: grid; grid-template-columns: 1fr 78px; gap: 8px; padding: 11px 13px 13px; border-top: 1px solid var(--line); }.comment-compose textarea, .report-zone textarea { width: 100%; min-height: 51px; resize: vertical; outline: 0; border: 1px solid var(--line); padding: 8px; color: var(--ink); background: #fff; font: inherit; font-size: 12px; }.comment-compose textarea:focus, .report-zone textarea:focus { border-color: var(--role); box-shadow: 0 0 0 2px var(--role-soft); }.comment-compose button { border: 1px solid var(--role); color: #fff; background: var(--role); font-size: 12px; font-weight: 700; }
-.report-zone { margin-top: 11px; padding: 12px; border: 1px solid #ecc7c9; background: #fff9f9; }.report-zone label { display: block; margin-bottom: 6px; color: #9e3036; font-size: 12px; font-weight: 700; }.report-zone textarea { min-height: 62px; border-color: #dfb9bb; }.report-zone > div { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }.report-zone button { height: 28px; padding: 0 11px; font-size: 11px; }.cancel-report { border: 1px solid var(--line); color: var(--muted); background: #fff; }.submit-report { border: 1px solid #b52c2f; color: #fff; background: #b52c2f; }
+.report-zone { margin-top: 11px; padding: 12px; border: 1px solid #ecc7c9; background: #fff9f9; }.report-zone label { display: block; margin: 10px 0 6px; color: #9e3036; font-size: 12px; font-weight: 700; }.report-zone label:first-child { margin-top: 0; }.report-zone select { width: 100%; height: 36px; padding: 0 9px; border: 1px solid #dfb9bb; outline: 0; color: var(--ink); background: #fff; font: inherit; font-size: 12px; }.report-zone select:focus { border-color: var(--role); box-shadow: 0 0 0 2px var(--role-soft); }.report-zone textarea { min-height: 62px; border-color: #dfb9bb; }.report-zone > div { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }.report-zone button { height: 28px; padding: 0 11px; font-size: 11px; }.cancel-report { border: 1px solid var(--line); color: var(--muted); background: #fff; }.submit-report { border: 1px solid #b52c2f; color: #fff; background: #b52c2f; }
 
 /* Policy Q&A and disclosure */
 .knowledge-page { width: 100%; max-width: none; padding-bottom: 42px; }
@@ -426,6 +431,9 @@ section.knowledge-question-tools button.knowledge-question-button:not(.primary):
 }
 
 @media (max-width: 620px) {
+  .ranking-post-modal { width: calc(100vw - 24px); max-height: 90vh; }
+  .ranking-post-body { padding: 0 12px 14px; }
+  .ranking-post-body .portal-post-card { margin-top: 12px; }
   html.knowledge-view .workspace { grid-template-columns: 64px minmax(0, 1fr); }
   html.knowledge-view .workspace-sidebar { padding: 14px 8px; }
   html.knowledge-view .side-caption, html.knowledge-view .side-item span, html.knowledge-view .sidebar-note { display: none; }

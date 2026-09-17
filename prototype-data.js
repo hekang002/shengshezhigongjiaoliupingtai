@@ -1,11 +1,16 @@
 (function () {
   const key = 'hubei-voice-prototype-v1';
+  const sensitiveMeta = (term) => {
+    if (/密码|口令|验证码|身份证|银行卡|涉密文件原件/.test(term)) return { category: '信息安全', riskLevel: '高' };
+    if (/底价|专家名单|人事档案|通讯录|干部任免|考核结果|会议纪要|保密协议/.test(term)) return { category: '内部信息', riskLevel: '中' };
+    return { category: '廉洁合规', riskLevel: '低' };
+  };
   const demoWords = [
     '涉密文件原件', '内部会议纪要全文', '未公开干部任免名单', '未公开项目底价', '招标评审专家名单',
     '财政专户密码', '单位账户密码', '后台管理口令', '验证码转发给我', '身份证号码及住址',
     '职工完整身份证号', '个人银行卡号及密码', '人事档案扫描件', '未经授权公开通讯录', '保密协议全文',
     '虚开发票套现', '公款私存', '违规收受礼金', '代写虚假验收报告', '绕过招标程序', '擅自披露考核结果'
-  ].map((term, index) => ({ id: `word-agency-demo-${index + 1}`, term, scope: '全部', matchRule: '包含匹配', enabled: true, hitCount: 0 })).filter((rule) => rule.id !== 'word-agency-demo-3');
+  ].map((term, index) => ({ id: `word-agency-demo-${index + 1}`, term, scope: '全部', matchRule: '包含匹配', ...sensitiveMeta(term), enabled: true, hitCount: 0 })).filter((rule) => rule.id !== 'word-agency-demo-3');
   const demoCommentTerms = ['内部会议纪要全文', '未公开项目底价', '招标评审专家名单', '财政专户密码', '单位账户密码', '后台管理口令', '验证码转发给我', '身份证号码及住址'];
   const demoComments = [
     ['不如把内部会议纪要全文直接发出来，大家查看更方便。', '刘畅', '合作指导处', '待审核'],
@@ -28,14 +33,25 @@
     ['该评论包含无关推广信息。', '匿名用户', '直属企业', '已驳回'],
     ['与原帖主题无关的情绪表达。', '匿名用户', '市州供销社', '已驳回'],
     ['包含不文明用语的演示评论。', '匿名用户', '省社机关', '已驳回']
-  ].map(([text, author, department, status], index) => ({ id: `PL-DEMO-${String(index + 1).padStart(3, '0')}`, postId: index % 4 === 0 ? 15 : index % 3 + 1, author, department, text, createdAt: `2026-09-${String(13 - Math.floor(index / 5)).padStart(2, '0')} ${String(9 + index % 8).padStart(2, '0')}:20`, status, risk: index < 8 ? '敏感词命中' : '低风险', sensitiveHits: index < 8 ? [demoCommentTerms[index]] : [], reviewReason: status === '已驳回' ? '内容与主题无关或不符合评论规范' : '', reviewedAt: status === '待审核' ? '' : '2026-09-14 09:00' }));
+  ].map(([text, author, department, status], index) => ({ id: `PL-DEMO-${String(index + 1).padStart(3, '0')}`, postId: index % 4 === 0 ? 'POST-FLOW-E-04' : index % 3 + 1, author, department, text, createdAt: `2026-09-${String(13 - Math.floor(index / 5)).padStart(2, '0')} ${String(9 + index % 8).padStart(2, '0')}:20`, status, risk: index < 8 ? '敏感词命中' : '低风险', sensitiveHits: index < 8 ? [demoCommentTerms[index]] : [], reviewReason: status === '已驳回' ? '内容与主题无关或不符合评论规范' : '', reviewedAt: status === '待审核' ? '' : '2026-09-14 09:00' }));
   const demoReports = [
     '疑似公开个人联系方式，请核对是否取得本人授权。', '内容中可能包含尚未公开的项目数据。', '评论存在不文明表达，影响正常交流。', '帖子疑似重复发布，请核查是否需要合并。',
     '内容与事实不符，建议联系相关部门核实。', '疑似包含广告推广信息。', '匿名发帖可能涉及对个人的不实评价。', '帖子中引用的政策文件版本可能已经失效。',
     '疑似泄露内部会议材料。', '评论区出现联系方式引流信息。', '内容可能侵犯他人隐私。', '标题与正文不一致，疑似误导。',
     '帖子包含未经证实的项目进度信息。', '疑似冒用他人身份发布内容。', '内容存在重复刷屏情况。', '举报该帖可能包含敏感业务数据。',
     '评论带有明显营销性质。', '内容引用来源不明确，请核查真实性。', '疑似恶意攻击其他用户。', '帖子可能违反平台信息发布规范。'
-  ].map((reason, index) => ({ id: `JB-DEMO-${String(index + 1).padStart(3, '0')}`, postId: index % 4 === 0 ? 15 : index % 3 + 1, reason, status: index < 12 ? '待核查' : '已处理', resolution: index < 12 ? '' : index % 2 ? '举报不成立' : '举报成立', reviewReason: index < 12 ? '' : index % 2 ? '经核对，原内容未违反平台规范。' : '经核对，内容存在违规信息，已记录处置。', reviewedAt: index < 12 ? '' : '2026-09-14 10:30' }));
+  ].map((reason, index) => ({
+    id: `JB-DEMO-${String(index + 1).padStart(3, '0')}`,
+    postId: index % 4 === 0 ? 'POST-FLOW-E-04' : index % 3 + 1,
+    reason,
+    category: /个人|隐私|身份/.test(reason) ? '个人信息' : /广告|营销|引流/.test(reason) ? '广告推广' : /攻击|不文明/.test(reason) ? '不文明内容' : /重复/.test(reason) ? '重复内容' : /内部|敏感|项目数据/.test(reason) ? '敏感信息' : '内容失实',
+    reporter: index % 3 === 0 ? '匿名举报' : ['刘畅', '赵颖', '黄晨'][index % 3],
+    createdAt: `2026-09-${String(15 - Math.floor(index / 4)).padStart(2, '0')} ${String(9 + index % 8).padStart(2, '0')}:30`,
+    status: index < 12 ? '待核查' : '已处理',
+    resolution: index < 12 ? '' : index % 2 ? '举报不成立' : '举报成立',
+    reviewReason: index < 12 ? '' : index % 2 ? '经核对，原内容未违反平台规范。' : '经核对，内容存在违规信息，已记录处置。',
+    reviewedAt: index < 12 ? '' : '2026-09-14 10:30'
+  }));
   const reviewBodyByTerm = {
     '内部会议纪要全文': '近期各处室通过工作群传阅会议材料的情况较多，建议明确可公开、内部传阅和限制传阅三个层级，并在文件首页标注范围。个别同事提出直接上传内部会议纪要全文供基层单位参考，建议平台先核对材料密级和公开边界，再决定是否发布。',
     '未公开项目底价': '基层社在准备冷链设施采购时，希望参考同类项目的预算构成和设备参数。目前项目仍处于采购论证阶段，材料中涉及未公开项目底价，建议由项目主管部门确认可公开范围后，整理成不含具体价格的经验指引。',
@@ -91,10 +107,86 @@
     shareChannels: { copy: 0, internal: 0, system: 0 },
     daily: []
   });
-  const nonPublicPostStatuses = new Set(['私密发布', '待审核', '退回修改', '已驳回', '已隐藏', '已反馈', '已私密回复', '已办结私密', '办理中', '待复核', '已处理-分办审核']);
+  const processBoards = new Set(['建言献策', '心声诉求']);
+  const pendingAuditStatuses = new Set(['私密发布', '待审核']);
+  const rejectedAuditStatuses = new Set(['退回修改', '已驳回']);
+  function deriveAuditStatus(post) {
+    if (post.contentAuditStatus) return post.contentAuditStatus;
+    if (pendingAuditStatuses.has(post.status)) return '待审核';
+    return rejectedAuditStatuses.has(post.status) ? '已驳回' : '审核通过';
+  }
+  function derivePublishStatus(post) {
+    if (post.publishStatus) return post.publishStatus;
+    if (post.status === '私密发布' || post.status === '已办结私密' || post.status === '已私密回复') return '私密发布';
+    if (pendingAuditStatuses.has(post.status) || rejectedAuditStatuses.has(post.status) || post.status === '已隐藏') return '未发布';
+    return '已发布';
+  }
+  function deriveHandlingStatus(post, affair) {
+    if (!processBoards.has(post.board)) return '不适用';
+    if (!affair) return deriveAuditStatus(post) === '审核通过' ? '待分办' : '不适用';
+    if (affair.status === '待分办') return '待分办';
+    if (affair.returnReason && affair.status === '办理中') return '退回修改';
+    if (affair.status === '待复核') return '待答复审核';
+    if (['已反馈', '已办结'].includes(affair.status)) return '已办结';
+    return '办理中';
+  }
+  function normalizeWorkflowState(data) {
+    let changed = false;
+    for (const affair of data.affairs || []) {
+      if (['待承办确认', '转办待接收'].includes(affair.status)) {
+        affair.status = '办理中';
+        affair.assignmentState = '办理中';
+        if (affair.transfer?.status === '待接收') affair.transfer.status = '已改派';
+        changed = true;
+      }
+      if (!affair.createdAt) { affair.createdAt = affair.reviewedAt || affair.events?.[0]?.at || '2026-09-14 09:00'; changed = true; }
+      if (!Array.isArray(affair.events)) { affair.events = []; changed = true; }
+      for (const event of affair.events) {
+        const text = String(event.text || '').replace('承办结果已提交，等待分办审核', '承办结果已提交，等待答复审核').replace('分办审核通过并办结', '答复审核通过并办结');
+        if (event.text !== text) { event.text = text; changed = true; }
+      }
+    }
+    for (const post of data.posts || []) {
+      const affair = (data.affairs || []).find((item) => String(item.postId) === String(post.id));
+      const contentAuditStatus = deriveAuditStatus(post);
+      const publishStatus = derivePublishStatus(post);
+      const handlingStatus = deriveHandlingStatus(post, affair);
+      if (post.contentAuditStatus !== contentAuditStatus) { post.contentAuditStatus = contentAuditStatus; changed = true; }
+      if (post.publishStatus !== publishStatus) { post.publishStatus = publishStatus; changed = true; }
+      if (post.handlingStatus !== handlingStatus) { post.handlingStatus = handlingStatus; changed = true; }
+    }
+    return changed;
+  }
+  function nextAffairNumber(data) {
+    const stamp = new Date().toLocaleDateString('sv-SE').slice(0, 7).replace('-', '');
+    const max = (data.affairs || []).reduce((value, affair) => {
+      const match = String(affair.id || '').match(/-(\d+)$/);
+      return Math.max(value, match ? Number(match[1]) : 0);
+    }, 79);
+    return `SX-${stamp}-${String(max + 1).padStart(3, '0')}`;
+  }
+  function ensureApprovedAffairs(data) {
+    let changed = false;
+    for (const post of data.posts || []) {
+      if (!processBoards.has(post.board) || deriveAuditStatus(post) !== '审核通过') continue;
+      if ((data.affairs || []).some((affair) => String(affair.postId) === String(post.id))) continue;
+      const createdAt = post.reviewedAt || post.updatedAt || post.createdAt || post.time || '2026-09-14 09:00';
+      const id = nextAffairNumber(data);
+      data.affairs.unshift({
+        id, postId: post.id, title: post.title, sourceType: post.board, publicationMode: derivePublishStatus(post),
+        auditStatus: '审核通过', reviewedAt: createdAt, createdAt, owner: '', initialOwner: '', co: '', assigneeId: '', assigneeName: '',
+        deadline: '', priority: '一般', feedback: '公开答复', requirements: '', status: '待分办', assignmentState: '待分办',
+        stage: '', progress: '', draft: '', extension: null, transfer: null, flowSnapshot: post.flowSnapshot || null,
+        events: [{ text: `内容审核通过，自动生成待分办事项 ${id}`, at: createdAt }]
+      });
+      post.handlingStatus = '待分办';
+      changed = true;
+    }
+    return changed;
+  }
   function isPublicPost(post) {
-    return Boolean(post) && post.enabled !== false && post.deleted !== true && !nonPublicPostStatuses.has(post.status)
-      && (!['建言献策', '心声诉求'].includes(post.board) || !post.processingAccepted || post.status === '已办结公开');
+    return Boolean(post) && post.enabled !== false && post.deleted !== true
+      && deriveAuditStatus(post) === '审核通过' && derivePublishStatus(post) === '已发布';
   }
   function isPublicEcho(publication, data) {
     if (publication?.status !== '已发布') return false;
@@ -102,21 +194,21 @@
     return !source || !['建言献策', '心声诉求'].includes(source.board) || isPublicPost(source);
   }
   function reconcileProcessingPosts(data) {
-    let changed = false;
+    let changed = normalizeWorkflowState(data);
+    if (ensureApprovedAffairs(data)) changed = true;
     for (const affair of data.affairs) {
       const post = data.posts.find((item) => String(item.id) === String(affair.postId));
-      if (!post || !['建言献策', '心声诉求'].includes(post.board) || post.processingAccepted) continue;
-      post.processingAccepted = true;
-      if (['待承办确认', '转办待接收', '办理中', '待复核'].includes(affair.status)) post.status = affair.status === '待复核' ? '已处理-分办审核' : '办理中';
+      if (!post || !processBoards.has(post.board)) continue;
+      if (!post.processingAccepted) { post.processingAccepted = true; changed = true; }
+      const handlingStatus = deriveHandlingStatus(post, affair);
+      if (post.handlingStatus !== handlingStatus) { post.handlingStatus = handlingStatus; changed = true; }
       if (['已反馈', '已办结'].includes(affair.status)) {
         affair.status = '已办结';
-        post.status = affair.feedback === '公开答复' ? '已办结公开' : '已办结私密';
         post.replyVisibility = affair.feedback === '公开答复' ? '公开可见' : '仅个人可见';
         post.reply = affair.draft || '';
       }
-      changed = true;
     }
-    return changed;
+    return normalizeWorkflowState(data) || changed;
   }
   const engagementSeeds = {
     1: { views: 326, uniqueViews: 248, likes: 42, favorites: 16, shares: 9, historicComments: 18 },
@@ -199,11 +291,11 @@
   const mockAffairs = processMockPosts.map((post, index) => {
     const departments = ['经济发展处', '办公室', '合作指导处'];
     const people = [['handler', '陈凯'], ['handler-office', '刘敏'], ['handler-cooperation', '周磊']];
-    const statuses = ['待承办确认', '转办待接收', '办理中', '办理中', '待复核', '已反馈', '已办结'];
+    const statuses = ['办理中', '办理中', '办理中', '办理中', '待复核', '已反馈', '已办结'];
     const status = statuses[index % statuses.length];
     const person = people[index % people.length];
     const deadline = `2026-09-${String(16 + (index % 12)).padStart(2, '0')}`;
-    const affair = { id: `SX-MOCK-${String(index + 1).padStart(3, '0')}`, postId: post.id, title: post.title, owner: departments[index % departments.length], initialOwner: departments[index % departments.length], co: departments[(index + 1) % departments.length], deadline, priority: index % 5 === 0 ? '紧急' : index % 3 === 0 ? '重点' : '一般', feedback: index % 4 === 0 ? '私密回复' : '公开答复', status, assignmentState: status, assigneeId: person[0], assigneeName: person[1], requirements: '请核实具体情况，形成办理措施并按时提交答复。', stage: status === '已办结' ? '形成正式答复' : ['调查核实', '制定措施', '等待协同反馈'][index % 3], progress: status === '待承办确认' ? '' : `已完成第 ${index % 3 + 1} 阶段核实，正在整理办理意见。`, draft: ['待复核', '已反馈', '已办结'].includes(status) ? `关于${post.title}的办理答复：已完成情况核实并提出改进措施。` : '', extension: null, returnReason: status === '办理中' && index % 6 === 0 ? '请补充协同部门反馈和完成时限。' : '', transfer: status === '转办待接收' ? { status: '待接收', fromDepartment: departments[index % departments.length], fromAssigneeId: person[0], fromAssigneeName: person[1], toDepartment: departments[(index + 1) % departments.length], toAssigneeId: people[(index + 1) % people.length][0], toAssigneeName: people[(index + 1) % people.length][1], reason: '根据事项职责范围转请相关部门办理。', at: '2026-09-14 09:20' } : null, events: [{ text: `已分办至${departments[index % departments.length]}`, at: `09月${String(14 - index % 5).padStart(2, '0')} 09:20` }, ...(status !== '待承办确认' ? [{ text: `${person[1]}已确认接收办理`, at: '2026-09-14 10:10' }] : [])] };
+    const affair = { id: `SX-MOCK-${String(index + 1).padStart(3, '0')}`, postId: post.id, title: post.title, owner: departments[index % departments.length], initialOwner: departments[index % departments.length], co: departments[(index + 1) % departments.length], deadline, priority: index % 5 === 0 ? '紧急' : index % 3 === 0 ? '重点' : '一般', feedback: index % 4 === 0 ? '私密回复' : '公开答复', status, assignmentState: status, assigneeId: person[0], assigneeName: person[1], requirements: '请核实具体情况，形成办理措施并按时提交答复。', stage: status === '已办结' ? '形成正式答复' : ['调查核实', '制定措施', '等待协同反馈'][index % 3], progress: `已完成第 ${index % 3 + 1} 阶段核实，正在整理办理意见。`, draft: ['待复核', '已反馈', '已办结'].includes(status) ? `关于${post.title}的办理答复：已完成情况核实并提出改进措施。` : '', extension: null, returnReason: status === '办理中' && index % 6 === 0 ? '请补充协同部门反馈和完成时限。' : '', transfer: null, events: [{ text: `已分办至${departments[index % departments.length]} · ${person[1]}，直接进入办理中`, at: `09月${String(14 - index % 5).padStart(2, '0')} 09:20` }] };
     return affair;
   });
   // POST-FLOW-I/V/E: overdue derives from deadline; exchange cases never create affairs.
@@ -249,8 +341,8 @@
       extension: null, transfer: null, events: [
         { text: `已交由${detail.assigneeName}办理`, at: `${submittedDay} 17:00` },
         ...(detail.progress ? [{ text: detail.progress, at: `${submittedDay} 18:20` }] : []),
-        ...(review ? [{ text: '承办结果已提交，等待分办审核', at: '09/14 09:10' }] : []),
-        ...(closed ? [{ text: `分办审核通过并办结 · ${detail.feedback}`, at: '09/15 10:30' }] : [])
+        ...(review ? [{ text: '承办结果已提交，等待答复审核', at: '09/14 09:10' }] : []),
+        ...(closed ? [{ text: `答复审核通过并办结 · ${detail.feedback}`, at: '09/15 10:30' }] : [])
       ]
     };
   });
@@ -338,7 +430,8 @@
     dictionaryTypes: [
       { id: 'dict-auth', name: '登录方式', key: 'sys_login_method', note: '登录方式演示项', createdAt: '2026-09-10 09:00' },
       { id: 'dict-affair', name: '事项优先级', key: 'affair_priority', note: '办理事项优先级', createdAt: '2026-09-10 09:00' },
-      { id: 'dict-status', name: '系统状态', key: 'sys_status', note: '基础状态展示', createdAt: '2026-09-10 09:00' }
+      { id: 'dict-status', name: '系统状态', key: 'sys_status', note: '基础状态展示', createdAt: '2026-09-10 09:00' },
+      { id: 'dict-report-reason', name: '举报原因类型', key: 'report_reason_type', note: '职工提交举报时选择，管理端可维护', createdAt: '2026-09-16 09:00' }
     ],
     dictionaryEntries: [
       { id: 'entry-password', typeId: 'dict-auth', label: '密码认证', value: 'password', sort: 1, note: '账号密码', createdAt: '2026-09-10 09:00' },
@@ -346,18 +439,25 @@
       { id: 'entry-normal', typeId: 'dict-affair', label: '一般', value: 'normal', sort: 1, note: '', createdAt: '2026-09-10 09:00' },
       { id: 'entry-important', typeId: 'dict-affair', label: '重点', value: 'important', sort: 2, note: '', createdAt: '2026-09-10 09:00' },
       { id: 'entry-urgent', typeId: 'dict-affair', label: '紧急', value: 'urgent', sort: 3, note: '', createdAt: '2026-09-10 09:00' },
-      { id: 'entry-active', typeId: 'dict-status', label: '正常', value: 'active', sort: 1, note: '', createdAt: '2026-09-10 09:00' }
+      { id: 'entry-active', typeId: 'dict-status', label: '正常', value: 'active', sort: 1, note: '', createdAt: '2026-09-10 09:00' },
+      { id: 'entry-report-personal', typeId: 'dict-report-reason', label: '个人信息', value: 'personal_information', sort: 1, note: '涉及个人联系方式、身份或隐私信息', createdAt: '2026-09-16 09:00' },
+      { id: 'entry-report-sensitive', typeId: 'dict-report-reason', label: '敏感信息', value: 'sensitive_information', sort: 2, note: '疑似涉及内部或不宜公开信息', createdAt: '2026-09-16 09:00' },
+      { id: 'entry-report-false', typeId: 'dict-report-reason', label: '内容失实', value: 'false_information', sort: 3, note: '内容可能与事实不符', createdAt: '2026-09-16 09:00' },
+      { id: 'entry-report-abuse', typeId: 'dict-report-reason', label: '不文明内容', value: 'abusive_content', sort: 4, note: '存在侮辱、攻击或不文明表达', createdAt: '2026-09-16 09:00' },
+      { id: 'entry-report-ad', typeId: 'dict-report-reason', label: '广告推广', value: 'advertising', sort: 5, note: '营销、推广或引流信息', createdAt: '2026-09-16 09:00' },
+      { id: 'entry-report-duplicate', typeId: 'dict-report-reason', label: '重复内容', value: 'duplicate_content', sort: 6, note: '重复发布或刷屏', createdAt: '2026-09-16 09:00' },
+      { id: 'entry-report-other', typeId: 'dict-report-reason', label: '其他', value: 'other', sort: 7, note: '其他需要平台核查的问题', createdAt: '2026-09-16 09:00' }
     ],
     boards: [
-      { id: 'board-ideas', name: '建言献策', sort: 1, enabled: true, staffPost: true },
-      { id: 'board-voices', name: '心声诉求', sort: 2, enabled: true, staffPost: true },
-      { id: 'board-exchange', name: '业务交流', sort: 3, enabled: true, staffPost: true },
-      { id: 'board-echo', name: '回音壁', sort: 4, enabled: true, staffPost: false }
+      { id: 'board-ideas', name: '建言献策', description: '征集改革发展和管理服务建议', type: '诉求办理类', publisher: '职工', reviewRule: '人工审核', allowComments: true, generatesAffair: true, system: false, sort: 1, enabled: true, staffPost: true },
+      { id: 'board-voices', name: '心声诉求', description: '反映工作生活中的具体问题和实际诉求', type: '诉求办理类', publisher: '职工', reviewRule: '人工审核', allowComments: true, generatesAffair: true, system: false, sort: 2, enabled: true, staffPost: true },
+      { id: 'board-exchange', name: '业务交流', description: '分享业务经验、工作方法和协作信息', type: '内容交流类', publisher: '职工', reviewRule: '按敏感规则处理', allowComments: true, generatesAffair: false, system: false, sort: 3, enabled: true, staffPost: true },
+      { id: 'board-echo', name: '回音壁', description: '展示已办结事项的答复和整改成效', type: '成果发布类', publisher: '管理员', reviewRule: '仅管理员发布', allowComments: true, generatesAffair: false, system: true, sort: 4, enabled: true, staffPost: false }
     ],
     flowConfigs: ['建言献策', '心声诉求'].map((board) => ({
       board, version: 1, published: { decision: '人工判断', contentRole: 'content', assignmentRole: 'dispatch', answerRole: 'dispatch', extensionRole: 'dispatch' }, draft: null, publishedAt: '2026-09-14 09:00'
     })),
-    sensitiveWords: [{ id: 'word-demo', term: '测试禁词', scope: '全部', matchRule: '包含匹配', enabled: true, hitCount: 0 }, ...demoWords],
+    sensitiveWords: [{ id: 'word-demo', term: '测试禁词', category: '其他', riskLevel: '高', scope: '全部', matchRule: '包含匹配', enabled: true, hitCount: 0 }, ...demoWords],
     deletedSensitiveWordIds: [],
     protectedLists: [{ id: 'list-demo-appointment', name: '未公开干部任免名单（虚构演示）', kind: '人事名单', scope: '全部', expires: '2026-12-31', enabled: true, hitCount: 0, entries: [{ name: '林知远', unit: '示范单位甲', position: '副主任' }, { name: '周明澈', unit: '示范单位乙', position: '处长' }] }],
     organizations: [
@@ -387,6 +487,9 @@
         for (const rule of raw.sensitiveWords) {
           if (!Number.isFinite(rule.hitCount)) { rule.hitCount = 0; wordsChanged = true; }
           if (!rule.matchRule) { rule.matchRule = '包含匹配'; wordsChanged = true; }
+          const meta = sensitiveMeta(rule.term || '');
+          if (!rule.category) { rule.category = meta.category; wordsChanged = true; }
+          if (!['高', '中', '低'].includes(rule.riskLevel)) { rule.riskLevel = meta.riskLevel; wordsChanged = true; }
         }
         for (const rule of demoWords) {
           if (!raw.deletedSensitiveWordIds.includes(rule.id) && !raw.sensitiveWords.some((item) => item.id === rule.id || item.term === rule.term)) {
@@ -409,15 +512,27 @@
         }
         for (const expected of demoComments) {
           const current = raw.comments.find((item) => item.id === expected.id);
-          if (current && (JSON.stringify(current.sensitiveHits || []) !== JSON.stringify(expected.sensitiveHits) || current.text !== expected.text)) { Object.assign(current, expected); dataChanged = true; }
+          if (current && (JSON.stringify(current.sensitiveHits || []) !== JSON.stringify(expected.sensitiveHits) || current.text !== expected.text || String(current.postId) !== String(expected.postId))) { Object.assign(current, expected); dataChanged = true; }
         }
         if (!Array.isArray(raw.reports)) { raw.reports = []; dataChanged = true; }
         for (const report of demoReports) {
           if (raw.reports.length >= 20) break;
           if (!raw.reports.some((item) => item.id === report.id)) { raw.reports.push({ ...report }); dataChanged = true; }
         }
+        for (const expected of demoReports) {
+          const current = raw.reports.find((item) => item.id === expected.id);
+          if (current && (!current.category || !current.reporter || !current.createdAt || String(current.postId) !== String(expected.postId))) {
+            Object.assign(current, expected, { status: current.status, resolution: current.resolution, reviewReason: current.reviewReason, reviewedAt: current.reviewedAt });
+            dataChanged = true;
+          }
+        }
         raw.boards.forEach((board, index) => {
           if (!Number.isInteger(board.sort) || board.sort < 1) { board.sort = index + 1; dataChanged = true; }
+          const expected = defaults.boards.find((item) => item.id === board.id);
+          const fallback = expected || { description: '', type: '内容交流类', publisher: '职工', reviewRule: '按敏感规则处理', allowComments: true, generatesAffair: false, system: false, staffPost: true };
+          for (const field of ['description', 'type', 'publisher', 'reviewRule', 'allowComments', 'generatesAffair', 'system', 'staffPost']) {
+            if (!Object.hasOwn(board, field)) { board[field] = fallback[field]; dataChanged = true; }
+          }
         });
         if (raw.flowFixtureVersion !== 2) {
           for (const post of flowPosts) if (!raw.posts.some((item) => String(item.id) === post.id)) raw.posts.push({ ...post });
@@ -464,6 +579,8 @@
           if (!Array.isArray(affair.events)) { affair.events = []; dataChanged = true; }
         }
         for (const field of ['roles', 'menus', 'dictionaryTypes', 'dictionaryEntries', 'loginLogs', 'policies', 'questions', 'notices', 'banners', 'echoPublications']) if (!Array.isArray(raw[field])) { raw[field] = defaults[field]; dataChanged = true; }
+        for (const type of defaults.dictionaryTypes.filter((item) => item.id === 'dict-report-reason')) if (!raw.dictionaryTypes.some((item) => item.id === type.id || item.key === type.key)) { raw.dictionaryTypes.push({ ...type }); dataChanged = true; }
+        for (const entry of defaults.dictionaryEntries.filter((item) => item.typeId === 'dict-report-reason')) if (!raw.dictionaryEntries.some((item) => item.id === entry.id)) { raw.dictionaryEntries.push({ ...entry }); dataChanged = true; }
         const countsBefore = [raw.posts.length, raw.affairs.length, raw.notices.length, raw.policies.length, raw.questions.length, raw.banners.length, raw.echoPublications.length].join(':');
         appendUntil(raw.posts, mockPosts, (post) => post.deleted !== true && ['私密发布', '已发布', '已受理', '已隐藏'].includes(post.status));
         appendUntil(raw.notices, mockNotices, () => true);
@@ -583,7 +700,7 @@
     flowFor(board, data = read()) { const item = data.flowConfigs?.find((flow) => flow.board === board); return item ? { ...item.published, board, version: item.version } : null; },
     blockedWord(content, scope, data = read()) {
       const normalized = String(content ?? '').normalize('NFKC').toLocaleLowerCase();
-      return data.sensitiveWords.find((rule) => {
+      const matches = data.sensitiveWords.filter((rule) => {
         if (!rule.enabled || (rule.scope !== '全部' && rule.scope !== scope)) return false;
         const term = String(rule.term || '').trim().normalize('NFKC').toLocaleLowerCase();
         if (!term) return false;
@@ -596,7 +713,9 @@
           start = normalized.indexOf(term, start + 1);
         }
         return false;
-      }) || null;
+      });
+      const priority = { '高': 3, '中': 2, '低': 1 };
+      return matches.sort((a, b) => (priority[b.riskLevel] || 2) - (priority[a.riskLevel] || 2))[0] || null;
     },
     recordHit(rule, data) {
       rule.hitCount = (Number.isFinite(rule.hitCount) ? rule.hitCount : 0) + 1;

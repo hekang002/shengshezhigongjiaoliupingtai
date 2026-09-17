@@ -64,8 +64,8 @@ const navByRole = {
     ['领导视图', leaderNav],
     ['数据分析', [['statistics', '数据统计', 'chart-no-axes-combined']]],
     ['内容管理', [['content-ledger', '信息台账管理', 'notebook-tabs'], ['announcements', '通知公告管理', 'megaphone'], ['policy', '政策与问答', 'book-open-check'], ['banners', '轮播图管理', 'images'], ['echo', '回音壁发布', 'badge-check']]],
-    ['事项办理', [['content-review', '信息内容审核', 'shield-check'], ['handler-dispatch', '事项分办', 'git-pull-request-arrow'], ['handler-closure', '公开与归档', 'archive-check']]],
-    ['审核管理', [['user-review', '用户审核', 'user-round-check'], ['comments', '评论审核', 'message-square'], ['report-review', '举报核查', 'flag-triangle-right']]],
+    ['事项办理', [['handler-dispatch', '事项分办', 'git-pull-request-arrow'], ['handler-closure', '公开与归档', 'archive']]],
+    ['审核管理', [['content-review', '信息内容审核', 'shield-check'], ['comments', '评论审核', 'message-square'], ['report-review', '举报核查', 'flag-triangle-right'], ['user-review', '用户审核', 'user-round-check']]],
     ['配置管理', [['categories', '栏目管理', 'panels-top-left'], ['sensitive', '敏感词库', 'scan-text'], ['flow-config', '流程配置', 'workflow'], ['base-config', '基础配置', 'shield-check']]],
     ['系统设置', [['users', '用户管理', 'users'], ['organization', '组织架构', 'network'], ['permissions', '角色管理', 'key-round'], ['menu-management', '菜单管理', 'panels-top-left'], ['dictionary-management', '字典管理', 'book-open'], ['logs', '系统日志', 'scroll-text']]],
   ],
@@ -77,14 +77,14 @@ const navByRole = {
   ],
   dispatch: [
     ['工作总览', [['dashboard', '运营工作台', 'gauge']]],
-    ['事项办理', [['content-review', '发言确认与业务交流审核', 'shield-check'], ['handler-dispatch', '办理与回复审核', 'git-pull-request-arrow'], ['rectifications', '整改台账', 'list-checks']]],
+    ['事项办理', [['handler-dispatch', '事项分办', 'git-pull-request-arrow'], ['rectifications', '整改台账', 'list-checks']]],
     ['分析与协同', [['statistics', '办理统计', 'chart-no-axes-combined'], ['audit', '操作留痕', 'scroll-text']]],
   ],
   handler: [['承办管理', handlerNav]],
   leader: [['领导视图', leaderNav]],
 };
 
-const STAFF_APP_URL = new URL('../', document.baseURI).href;
+const STAFF_APP_URL = new URL('../index.html', document.baseURI).href;
 
 function showToast(message) {
   const el = document.getElementById('toast');

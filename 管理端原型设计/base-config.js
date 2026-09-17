@@ -1,60 +1,51 @@
 (function () {
   const seed = [
-    ['cfg-1', '最小密码长度', 'password.min.length', '12', '数字', '密码策略', '单位：位，允许范围 8-64'],
-    ['cfg-2', '密码复杂度要求', 'password.complexity.enabled', '是', '布尔', '密码策略', '要求密码包含多类字符'],
-    ['cfg-3', '密码有效期', 'password.expiry.days', '90', '数字', '密码策略', '单位：天，0 表示不限制'],
-    ['cfg-4', '密码历史记录数', 'password.history.count', '5', '数字', '密码策略', '不可重复使用最近密码'],
-    ['cfg-5', '无操作自动退出时长', 'session.idle.minutes', '30', '数字', '会话策略', '单位：分钟'],
-    ['cfg-6', '单次会话最长时长', 'session.max.hours', '8', '数字', '会话策略', '单位：小时'],
-    ['cfg-7', '单账号会话限制', 'session.single.enabled', '否', '布尔', '会话策略', '仅允许一个活跃会话'],
-    ['cfg-8', '连续登录失败次数', 'login.failure.limit', '5', '数字', '登录锁定', '达到次数后锁定账号'],
-    ['cfg-9', '失败计数时间窗口', 'login.failure.window.minutes', '15', '数字', '登录锁定', '单位：分钟'],
-    ['cfg-10', '自动解锁等待时间', 'login.lock.minutes', '30', '数字', '登录锁定', '单位：分钟'],
-    ['cfg-11', '允许管理员提前解锁', 'login.admin.unlock.enabled', '是', '布尔', '登录锁定', '平台管理员可提前解除锁定']
-  ].map(([id, name, key, value, type, group, remark], index) => ({ id, name, key, value, type, group, remark, sort: index + 1, enabled: true }));
-  const groups = [
-    { id: 'password', name: '密码策略', code: 'security.password', summary: '密码长度、复杂度、有效期及历史记录', sort: 1 },
-    { id: 'session', name: '会话策略', code: 'security.session', summary: '空闲退出、最长会话及单账号会话限制', sort: 2 },
-    { id: 'lock', name: '登录锁定', code: 'security.login.lock', summary: '失败计数、锁定时长及管理员解锁', sort: 3 }
+    ['cfg-web-mode','名称展示方式','web.site.name.mode','text','单选','Web 端基础信息','选择顶部平台名称使用文字或图片展示'],['cfg-web-name','Web 端名称','web.site.name','湖北供销·心声','文本','Web 端基础信息','显示在页面顶部和浏览器标题'],['cfg-web-name-image','Web 端名称图片','web.site.name.image','','图片','Web 端基础信息','支持 PNG、JPG、WebP，文件不超过 1 MB'],['cfg-web-logo','Web 端 Logo','web.site.logo','','图片','Web 端基础信息','显示在登录页和页面顶部，建议使用透明背景图片'],
+    ['cfg-1','最小密码长度','password.min.length','12','数字','密码策略','允许范围 8-64'],['cfg-2','密码复杂度要求','password.complexity.enabled','是','布尔','密码策略','要求密码同时包含字母、数字和特殊字符'],['cfg-3','密码有效期','password.expiry.days','90','数字','密码策略','0 表示密码长期有效'],['cfg-4','密码历史记录数','password.history.count','5','数字','密码策略','新密码不可与最近使用过的密码相同'],
+    ['cfg-5','无操作自动退出时长','session.idle.minutes','30','数字','会话策略','超过该时长无操作，系统将自动退出'],['cfg-6','单次会话最长时长','session.max.hours','8','数字','会话策略','达到时限后需重新登录'],['cfg-7','单账号会话限制','session.single.enabled','否','布尔','会话策略','启用后，新设备登录会使原设备退出'],
+    ['cfg-8','连续登录失败次数','login.failure.limit','5','数字','登录锁定','达到次数后自动锁定账号'],['cfg-9','失败计数时间窗口','login.failure.window.minutes','15','数字','登录锁定','只统计该时间窗口内的连续失败'],['cfg-10','自动解锁等待时间','login.lock.minutes','30','数字','登录锁定','锁定后等待该时长自动解锁'],['cfg-11','允许管理员提前解锁','login.admin.unlock.enabled','是','布尔','登录锁定','平台管理员可在用户管理中提前解除锁定']
+  ].map(([id,name,key,value,type,group,remark],index)=>({id,name,key,value,type,group,remark,sort:index+1,enabled:true}));
+  const groups=[
+    {id:'web',name:'Web 端基础信息',code:'web.site',summary:'平台名称、名称图片与 Logo',icon:'panel-top',tone:'平台外观'},
+    {id:'password',name:'密码策略',code:'security.password',summary:'密码强度、有效期与历史规则',icon:'key-round',tone:'账号安全'},
+    {id:'session',name:'会话策略',code:'security.session',summary:'登录会话时长和设备限制',icon:'monitor-smartphone',tone:'访问安全'},
+    {id:'lock',name:'登录锁定',code:'security.login.lock',summary:'异常登录识别与账号锁定',icon:'shield-alert',tone:'风险控制'}
   ];
-  const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const btn = (label, action, id = '', kind = '') => `<button type="button" class="btn btn-sm ${kind ? 'btn-' + kind : 'btn-secondary'}" data-base-action="${action}" data-id="${esc(id)}">${label}</button>`;
-  const items = (data = PrototypeData.read()) => Array.isArray(data.baseConfigItems) ? data.baseConfigItems : seed;
-  let keyword = '', modalGroup = '';
-  function saveData(mutator, detail) {
-    const data = PrototypeData.read();
-    if (!Array.isArray(data.baseConfigItems)) data.baseConfigItems = seed;
-    mutator(data.baseConfigItems);
-    data.audit.unshift({ action: '基础配置', target: detail, detail, role: roleInfo[state.role].label, at: new Date().toLocaleString('zh-CN', { hour12: false }) });
-    PrototypeData.save(data);
+  const units={'cfg-1':'位','cfg-3':'天','cfg-4':'次','cfg-5':'分钟','cfg-6':'小时','cfg-8':'次','cfg-9':'分钟','cfg-10':'分钟'};
+  const limits={'cfg-1':[8,64],'cfg-3':[0,365],'cfg-4':[0,20],'cfg-5':[5,240],'cfg-6':[1,72],'cfg-8':[3,20],'cfg-9':[5,120],'cfg-10':[5,1440]};
+  const esc=(value)=>String(value??'').replace(/[&<>"']/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const mergeSeed=(stored)=>{const current=Array.isArray(stored)?stored:[];return [...current,...seed.filter((item)=>!current.some((row)=>row.id===item.id)).map((item)=>({...item}))];};
+  const allItems=()=>mergeSeed(PrototypeData.read().baseConfigItems);
+  const ico=(name)=>typeof icon==='function'?icon(name):'';
+  let activeGroup='web',draft={},dirty=false,confirmGroup='';
+  const valueOf=(item)=>Object.hasOwn(draft,item.id)?draft[item.id]:item.value;
+
+  function editor(item){
+    const value=valueOf(item);
+    if(item.type==='布尔')return `<label class="base-work-switch"><input type="checkbox" data-base-field="${item.id}" ${value==='是'?'checked':''}><span></span><b>${value==='是'?'已开启':'已关闭'}</b></label>`;
+    if(item.type==='数字'){const [min,max]=limits[item.id]||[0,9999];return `<div class="base-work-number"><input type="number" data-base-field="${item.id}" value="${esc(value)}" min="${min}" max="${max}"><span>${units[item.id]||''}</span></div>`;}
+    if(item.type==='图片')return `<div class="base-work-upload"><div class="base-work-preview" data-base-preview="${item.id}">${value?`<img src="${esc(value)}" alt="${esc(item.name)}预览">`:`${ico('image')}<span>暂未上传</span>`}</div><div><label class="btn btn-sm btn-secondary"><input type="file" accept="image/png,image/jpeg,image/webp" data-base-file="${item.id}">${ico('upload')}选择图片</label><button type="button" class="text-link" data-base-action="clear-image" data-id="${item.id}" ${value?'':'disabled'}>移除</button><small>PNG、JPG 或 WebP，不超过 1 MB</small></div></div>`;
+    return `<input class="input base-work-text" data-base-field="${item.id}" value="${esc(value)}" autocomplete="off">`;
   }
-  function modal() {
-    if (!modalGroup) return '';
-    const group = groups.find((entry) => entry.name === modalGroup);
-    const rows = items().filter((item) => item.group === modalGroup).sort((a, b) => a.sort - b.sort);
-    return `<div class="modal-backdrop base-modal"><section class="modal base-detail-modal" role="dialog" aria-modal="true" aria-label="${esc(modalGroup)}配置详情"><div class="modal-head"><div><h3>${esc(modalGroup)}配置详情</h3><p>${esc(group.summary)} · 共 ${rows.length} 项参数</p></div><button type="button" class="base-modal-close" data-base-action="close" aria-label="关闭">×</button></div><div class="modal-body"><div class="base-detail-head"><span>参数名称</span><span>配置值</span><span>值类型</span><span>状态</span></div><div class="base-detail-rows">${rows.map((item) => `<div class="base-detail-row"><label><strong>${esc(item.name)}</strong><code>${esc(item.key)}</code></label><input class="input" data-base-value="${item.id}" value="${esc(item.value)}"><span>${esc(item.type)}</span><label class="base-detail-switch"><input type="checkbox" data-base-enabled="${item.id}" ${item.enabled ? 'checked' : ''}><span></span><em>${item.enabled ? '启用' : '停用'}</em></label><p>${esc(item.remark)}</p></div>`).join('')}</div></div><div class="modal-foot"><span class="base-detail-tip">保存后记录操作日志</span>${btn('取消', 'close')}${btn('保存配置', 'save-group', modalGroup, 'primary')}</div></section></div>`;
+  function fieldRow(item){
+    if(item.id==='cfg-web-mode'){const value=valueOf(item);return `<div class="base-work-row"><div class="base-work-label"><strong>${item.name}</strong><p>${item.remark}</p></div><div class="base-work-control"><div class="base-work-segments" role="radiogroup"><label><input type="radio" name="base-mode" data-base-field="${item.id}" value="text" ${value==='text'?'checked':''}><span>${ico('type')}文字名称</span></label><label><input type="radio" name="base-mode" data-base-field="${item.id}" value="image" ${value==='image'?'checked':''}><span>${ico('image')}名称图片</span></label></div></div></div>`;}
+    return `<div class="base-work-row"><div class="base-work-label"><strong>${esc(item.name)}</strong><p>${esc(item.remark)}</p><code>${esc(item.key)}</code></div><div class="base-work-control">${editor(item)}</div></div>`;
   }
-  function page() {
-    if (state.role !== 'platform') return pageHead('基础配置', '当前角色无权维护基础配置。');
-    const all = items();
-    const visible = groups.filter((group) => !keyword || (group.name + group.code + group.summary).includes(keyword));
-    return pageHead('基础配置', '一种配置一条记录，具体参数在详情中集中维护。') +
-      `<div class="base-group-filter"><label>关键词<input class="input" id="base-group-keyword" value="${esc(keyword)}" placeholder="配置名称或编码"></label><div>${btn('重置', 'reset')}${btn('搜索', 'search', '', 'primary')}</div></div><section class="base-config-table base-group-table"><div class="section-title"><h2>系统配置</h2><span>共 ${visible.length} 条</span></div><div class="table-wrap"><table class="data-table"><thead><tr><th>配置名称</th><th>配置编码</th><th>参数数量</th><th>状态</th><th>排序</th><th>说明</th><th>更新时间</th><th>操作</th></tr></thead><tbody>${visible.map((group) => { const children = all.filter((item) => item.group === group.name); const enabled = children.some((item) => item.enabled); return `<tr><td><strong>${group.name}</strong></td><td><code>${group.code}</code></td><td>${children.length} 项</td><td><span class="badge ${enabled ? 'green' : ''}">${enabled ? '已启用' : '已停用'}</span></td><td>${group.sort}</td><td>${group.summary}</td><td>2026-09-14 09:00</td><td>${btn('配置详情', 'detail', group.name, 'primary')}</td></tr>`; }).join('')}</tbody></table></div></section>${modal()}`;
+  function filteredRows(groupName){let rows=allItems().filter((item)=>item.group===groupName).sort((a,b)=>a.sort-b.sort);if(groupName==='Web 端基础信息'){const mode=valueOf(rows.find((item)=>item.id==='cfg-web-mode'));rows=rows.filter((item)=>item.id!==(mode==='image'?'cfg-web-name':'cfg-web-name-image'));}return rows;}
+  function confirmation(){if(!confirmGroup)return '';const group=groups.find((item)=>item.id===confirmGroup);return `<div class="modal-backdrop base-confirm"><section class="modal" role="alertdialog" aria-modal="true"><div class="modal-head"><div><h3>确认保存安全配置</h3><p>${esc(group.name)}修改后将对全平台用户生效</p></div></div><div class="modal-body"><div class="base-confirm-warning">${ico('triangle-alert')}<div><strong>请确认配置值已经过核对</strong><p>不合理的安全参数可能导致用户无法登录或会话提前中断。本次操作将写入系统日志。</p></div></div></div><div class="modal-foot"><button class="btn btn-secondary" data-base-action="cancel-confirm">取消</button><button class="btn btn-primary" data-base-action="confirm-save">确认并保存</button></div></section></div>`;}
+  function page(){
+    if(state.role!=='platform')return pageHead('基础配置','当前角色无权维护基础配置。');
+    const current=groups.find((item)=>item.id===activeGroup)||groups[0],rows=filteredRows(current.name);
+    const nav=groups.map((group)=>`<button type="button" class="base-work-nav-item ${group.id===activeGroup?'active':''}" data-base-action="group" data-id="${group.id}"><span class="base-work-nav-icon">${ico(group.icon)}</span><span><strong>${group.name}</strong><small>${group.summary}</small></span>${ico('chevron-right')}</button>`).join('');
+    const changed=dirty?'<span class="base-unsaved"><i></i>有未保存的修改</span>':'<span class="base-saved">当前配置已保存</span>';
+    return pageHead('基础配置','统一维护平台外观与账号安全规则，配置变更自动记录系统日志。')+`<div class="base-workspace"><aside class="base-work-nav"><div class="base-work-nav-head"><strong>配置分类</strong><span>4 类</span></div>${nav}<div class="base-work-nav-note">${ico('history')}<div><strong>最近更新</strong><span>平台管理员 · 2026-09-16 09:00</span></div></div></aside><section class="base-work-main"><header class="base-work-head"><div><span class="base-work-kicker">${esc(current.tone)}</span><h2>${esc(current.name)}</h2><p>${esc(current.summary)}</p></div></header>${current.id!=='web'?`<div class="base-security-tip">${ico('shield-check')}<span>安全配置修改后立即对全平台生效，保存前需要二次确认。</span></div>`:''}<div class="base-work-fields">${rows.map(fieldRow).join('')}</div><footer class="base-work-footer"><div>${changed}<small>保存后将记录操作人、时间和变更分类</small></div><button class="btn btn-secondary" data-base-action="revert" ${dirty?'':'disabled'}>${ico('rotate-ccw')}撤销修改</button><button class="btn btn-primary" data-base-action="save" ${dirty?'':'disabled'}>${ico('save')}保存配置</button></footer></section></div>${confirmation()}`;
   }
-  document.addEventListener('click', (event) => {
-    const target = event.target.closest('[data-base-action]');
-    if (!target) return;
-    const action = target.dataset.baseAction, id = target.dataset.id;
-    if (action === 'detail') { modalGroup = id; return render(); }
-    if (action === 'close') { modalGroup = ''; return render(); }
-    if (action === 'reset') { keyword = ''; return render(); }
-    if (action === 'search') { keyword = document.getElementById('base-group-keyword').value.trim(); return render(); }
-    if (action === 'save-group') {
-      const values = [...document.querySelectorAll('[data-base-value]')].map((field) => ({ id: field.dataset.baseValue, value: field.value.trim(), enabled: document.querySelector(`[data-base-enabled="${field.dataset.baseValue}"]`).checked }));
-      if (values.some((entry) => !entry.value)) return showToast('配置值不能为空');
-      saveData((all) => values.forEach((entry) => { const item = all.find((row) => row.id === entry.id); if (item) Object.assign(item, { value: entry.value, enabled: entry.enabled }); }), '更新' + id);
-      modalGroup = ''; render(); showToast(id + '已保存');
-    }
-  });
-  window.ManagementBaseConfig = { page };
+  function markDirty(){dirty=true;const status=document.querySelector('.base-work-footer>div');if(status)status.innerHTML='<span class="base-unsaved"><i></i>有未保存的修改</span><small>保存后将记录操作人、时间和变更分类</small>';document.querySelectorAll('.base-work-footer .btn').forEach((button)=>button.disabled=false);}
+  function updateField(field){draft[field.dataset.baseField]=field.type==='checkbox'?(field.checked?'是':'否'):field.value;markDirty();}
+  function persist(){const group=groups.find((item)=>item.id===activeGroup),data=PrototypeData.read();data.baseConfigItems=mergeSeed(data.baseConfigItems);Object.entries(draft).forEach(([id,value])=>{const item=data.baseConfigItems.find((row)=>row.id===id);if(item)item.value=value;});data.audit.unshift({action:'基础配置',target:group.name,detail:`更新${group.name}`,role:roleInfo[state.role].label,at:new Date().toLocaleString('zh-CN',{hour12:false})});PrototypeData.save(data);draft={};dirty=false;confirmGroup='';render();showToast(group.name+'已保存');}
+  const readImage=(file)=>new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(file);});
+  document.addEventListener('input',(event)=>{const field=event.target.closest('[data-base-field]');if(field)updateField(field);});
+  document.addEventListener('change',async(event)=>{const field=event.target.closest('[data-base-field]');if(field){updateField(field);if(field.dataset.baseField==='cfg-web-mode')render();}const input=event.target.closest('[data-base-file]');if(!input||!input.files[0])return;const file=input.files[0];if(!['image/png','image/jpeg','image/webp'].includes(file.type))return showToast('仅支持 PNG、JPG、WebP 图片');if(file.size>1024*1024)return showToast('图片文件不能超过 1 MB');try{draft[input.dataset.baseFile]=await readImage(file);markDirty();render();}catch(_){showToast('图片读取失败，请重新选择');}});
+  document.addEventListener('click',(event)=>{const target=event.target.closest('[data-base-action]');if(!target)return;const action=target.dataset.baseAction;if(action==='group'){if(dirty&&!window.confirm('当前修改尚未保存，确认切换配置分类吗？'))return;activeGroup=target.dataset.id;draft={};dirty=false;return render();}if(action==='clear-image'){draft[target.dataset.id]='';markDirty();return render();}if(action==='revert'){draft={};dirty=false;return render();}if(action==='save'){const invalid=Object.entries(draft).find(([id,value])=>limits[id]&&(value===''||Number(value)<limits[id][0]||Number(value)>limits[id][1]));if(invalid){const item=allItems().find((row)=>row.id===invalid[0]);return showToast(`${item.name}应在 ${limits[invalid[0]][0]}-${limits[invalid[0]][1]} 之间`);}if(activeGroup==='web')return persist();confirmGroup=activeGroup;return render();}if(action==='cancel-confirm'){confirmGroup='';return render();}if(action==='confirm-save')return persist();});
+  window.ManagementBaseConfig={page};
 })();
