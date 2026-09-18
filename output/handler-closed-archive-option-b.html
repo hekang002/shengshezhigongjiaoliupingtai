@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>方案 B｜已办结事项档案视图</title>
+  <link rel="icon" href="data:,">
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+  <script src="../prototype-data.js"></script>
+  <style>
+    :root { --red:#bd2730; --red-soft:#fbecec; --ink:#222426; --muted:#72777c; --line:#ddd9d3; --paper:#f5f4f1; --green:#237459; --green-soft:#eaf6f0; --blue:#326fa8; --blue-soft:#edf4fb; --gold:#a66d13; --gold-soft:#fff4df; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--paper); color:var(--ink); font-family:"PingFang SC","Microsoft YaHei",sans-serif; letter-spacing:0; }
+    button,input,select { font:inherit; letter-spacing:0; }
+    button { cursor:pointer; }
+    .topbar { height:66px; display:grid; grid-template-columns:232px minmax(300px,680px) 1fr; align-items:center; gap:36px; padding:0 24px; border-top:3px solid var(--red); border-bottom:1px solid var(--line); background:#fff; }
+    .brand { display:flex; align-items:center; gap:10px; font-weight:800; }
+    .brand-mark { width:34px; height:34px; display:grid; place-items:center; border-radius:50%; background:var(--red); color:#fff; font-size:10px; line-height:1.05; text-align:center; }
+    .global-search { height:42px; padding:0 14px; border:1px solid #ccd0d4; background:#fff; color:var(--muted); }
+    .account { justify-self:end; font-weight:700; }
+    .shell { display:grid; grid-template-columns:232px minmax(0,1fr); min-height:calc(100vh - 66px); }
+    .sidebar { padding:20px 12px; background:#292c2f; color:#e9eaeb; }
+    .nav { display:grid; gap:6px; }
+    .nav button { height:44px; display:flex; align-items:center; gap:10px; padding:0 14px; border:0; background:transparent; color:inherit; text-align:left; }
+    .nav .group { margin-top:8px; background:#393d40; border-left:3px solid var(--red); font-weight:800; }
+    .nav .child { margin-left:20px; padding-left:18px; color:#d4d7d9; }
+    .nav .active { background:var(--red); color:#fff; font-weight:800; }
+    .icon { width:17px; height:17px; stroke-width:1.8; }
+    main { min-width:0; padding:28px 34px 40px; }
+    .decision { display:flex; align-items:center; gap:12px; margin-bottom:12px; color:var(--muted); font-size:12px; }
+    .decision b { padding:4px 8px; background:#35393c; color:#fff; }
+    h1 { margin:0; font-family:"Songti SC","STSong",serif; font-size:32px; }
+    .subtitle { margin:7px 0 18px; color:var(--muted); }
+    .toolbar { display:grid; grid-template-columns:minmax(220px,1.5fr) repeat(2,minmax(140px,.7fr)) auto; gap:10px; margin-bottom:14px; padding:14px; border:1px solid var(--line); background:#fff; }
+    .toolbar input,.toolbar select { height:38px; min-width:0; padding:0 10px; border:1px solid var(--line); background:#fff; }
+    .toolbar button { padding:0 17px; border:0; background:var(--red); color:#fff; }
+    .workspace { display:grid; grid-template-columns:minmax(280px,.78fr) minmax(520px,1.55fr); min-height:650px; border:1px solid var(--line); background:#fff; }
+    .archive-list { min-width:0; border-right:1px solid var(--line); background:#faf9f7; }
+    .archive-head { display:flex; justify-content:space-between; padding:16px; border-bottom:1px solid var(--line); background:#fff; }
+    .archive-head span { color:var(--muted); font-size:12px; }
+    .case { width:100%; display:block; padding:15px 16px; border:0; border-bottom:1px solid #e6e2dd; background:transparent; text-align:left; }
+    .case:hover { background:#fff; }
+    .case.active { background:var(--red-soft); box-shadow:inset 3px 0 var(--red); }
+    .case strong,.case small { display:block; }
+    .case strong { font-size:13px; line-height:1.55; }
+    .case small { margin-top:5px; color:var(--muted); }
+    .case-footer { display:flex; justify-content:space-between; align-items:center; margin-top:9px; }
+    .badge { display:inline-block; padding:3px 7px; background:var(--blue-soft); color:var(--blue); font-size:11px; }
+    .badge.green { background:var(--green-soft); color:var(--green); }
+    .badge.gold { background:var(--gold-soft); color:var(--gold); }
+    .detail { min-width:0; }
+    .detail-head { display:flex; justify-content:space-between; gap:18px; padding:21px 24px; border-bottom:1px solid var(--line); }
+    .detail-head h2 { margin:0; font-size:20px; line-height:1.5; }
+    .detail-head p { margin:6px 0 0; color:var(--muted); font-size:12px; }
+    .stage { display:grid; grid-template-columns:repeat(4,1fr); padding:17px 24px; border-bottom:1px solid var(--line); }
+    .stage span { position:relative; color:var(--green); font-size:11px; font-weight:700; }
+    .stage span::before { content:""; display:block; width:10px; height:10px; margin-bottom:7px; border-radius:50%; background:var(--green); }
+    .stage span::after { content:""; position:absolute; top:5px; left:13px; right:8px; height:1px; background:#bfd8cc; }
+    .stage span:last-child::after { display:none; }
+    .detail-body { display:grid; grid-template-columns:1fr .72fr; }
+    .result { min-width:0; padding:22px 24px; border-right:1px solid var(--line); }
+    .result h3,.meta h3 { margin:0 0 12px; font-size:14px; }
+    .answer { min-height:145px; padding:17px 18px; border-left:3px solid var(--red); background:#fcf6f5; font-size:13px; line-height:1.8; white-space:pre-wrap; }
+    .materials { margin-top:18px; padding:13px 14px; border:1px solid var(--line); color:var(--muted); font-size:12px; }
+    .meta { padding:22px; background:#faf9f7; }
+    dl { display:grid; grid-template-columns:1fr 1fr; gap:15px; margin:0; }
+    dt { color:var(--muted); font-size:10px; }
+    dd { margin:4px 0 0; font-size:12px; line-height:1.55; overflow-wrap:anywhere; }
+    .wide { grid-column:1/-1; }
+    .timeline { display:grid; gap:11px; margin-top:22px; }
+    .timeline div { padding-left:13px; border-left:2px solid var(--line); }
+    .timeline strong,.timeline small { display:block; }
+    .timeline strong { font-size:12px; }
+    .timeline small { margin-top:3px; color:var(--muted); font-size:10px; }
+    @media (max-width:1050px) { .workspace { grid-template-columns:1fr; } .archive-list { border-right:0; border-bottom:1px solid var(--line); } #cases { display:flex; overflow:auto; } .case { flex:0 0 280px; border-right:1px solid var(--line); } }
+    @media (max-width:760px) { .topbar { grid-template-columns:1fr auto; gap:12px; } .global-search { display:none; } .shell { grid-template-columns:184px minmax(0,1fr); } main { padding:22px 18px; } .toolbar,.detail-body { grid-template-columns:1fr; } .result { border-right:0; border-bottom:1px solid var(--line); } }
+  </style>
+</head>
+<body>
+  <header class="topbar"><div class="brand"><span class="brand-mark">湖北<br>供销</span>湖北供销 · 心声</div><div class="global-search">⌕　输入关键词，多个关键词请用空格分隔</div><div class="account">管　王敏⌄</div></header>
+  <div class="shell">
+    <aside class="sidebar"><nav class="nav"><button><i data-lucide="layout-dashboard"></i>工作总览</button><button><i data-lucide="notebook-tabs"></i>内容管理</button><button class="group"><i data-lucide="briefcase-business"></i>承办管理　⌄</button><button class="child"><i data-lucide="layout-list"></i>工作台与任务</button><button class="child"><i data-lucide="clipboard-pen-line"></i>办理反馈</button><button class="child active"><i data-lucide="badge-check"></i>已办结事项</button><button><i data-lucide="clipboard-list"></i>事项办理</button></nav></aside>
+    <main>
+      <div class="decision"><b>方案 B</b><span>办结档案式，适合逐项复盘，但批量查询效率低于方案 A</span></div>
+      <h1>已办结事项</h1><p class="subtitle">从同一办结台账中选择事项，查看最终答复与完整办理档案。</p>
+      <form class="toolbar" id="filters"><input id="query" placeholder="搜索事项名称或编号"><select id="type"><option value="">全部类型</option><option>建言献策</option><option>心声诉求</option></select><select id="reply"><option value="">全部答复方式</option><option>公开答复</option><option>私密回复</option></select><button>查询</button></form>
+      <section class="workspace"><aside class="archive-list"><header class="archive-head"><strong>办结档案</strong><span id="count"></span></header><div id="cases"></div></aside><section class="detail" id="detail"></section></section>
+    </main>
+  </div>
+  <script>
+    const db=PrototypeData.read();const posts=new Map(db.posts.map(item=>[String(item.id),item]));
+    const all=db.affairs.filter(item=>['已反馈','已办结'].includes(item.status)&&['建言献策','心声诉求'].includes(posts.get(String(item.postId))?.board));let activeId=all[0]?.id;
+    const typeOf=item=>posts.get(String(item.postId))?.board||item.sourceType||'未记录';const replyOf=item=>item.feedback||'公开答复';const closedAt=item=>item.closedAt||item.repliedAt||[...(item.events||[])].reverse().find(event=>/办结|审核通过|已反馈/.test(event.text||''))?.at||'未记录';
+    function currentRows(){const keyword=query.value.trim().toLowerCase();return all.filter(item=>(!keyword||`${item.id} ${item.title}`.toLowerCase().includes(keyword))&&(!type.value||typeOf(item)===type.value)&&(!reply.value||replyOf(item)===reply.value));}
+    function drawDetail(item){if(!item){detail.innerHTML='<div style="padding:42px;color:#72777c">暂无匹配的办结档案</div>';return;}const events=[...(item.events||[])].reverse().slice(0,5);detail.innerHTML=`<header class="detail-head"><div><h2>${item.title}</h2><p>${item.id} · ${typeOf(item)} · ${item.priority||'一般'}</p></div><span class="badge green">已办结</span></header><div class="stage"><span>内容审核</span><span>事项分办</span><span>办理答复</span><span>审核办结</span></div><div class="detail-body"><section class="result"><h3>最终答复</h3><div class="answer">${item.draft||'未记录正式答复内容'}</div><div class="materials"><strong>办理材料</strong>　${(item.attachments||[]).join('、')||'无附件'}</div></section><aside class="meta"><h3>办结信息</h3><dl><div><dt>承办部门</dt><dd>${item.owner||'未记录'}</dd></div><div><dt>办理人</dt><dd>${item.assigneeName||item.assigneeId||'未记录'}</dd></div><div><dt>协同部门</dt><dd>${item.co||'无'}</dd></div><div><dt>答复方式</dt><dd>${replyOf(item)}</dd></div><div><dt>办理期限</dt><dd>${item.deadline||'未记录'}</dd></div><div><dt>办结时间</dt><dd>${closedAt(item)}</dd></div><div class="wide"><dt>办理要求</dt><dd>${item.requirements||'未记录'}</dd></div></dl><div class="timeline">${events.map(event=>`<div><strong>${event.text}</strong><small>${event.at}</small></div>`).join('')||'<div><strong>暂无办理记录</strong></div>'}</div></aside></div>`;lucide.createIcons();}
+    function render(){const rows=currentRows();if(!rows.some(item=>String(item.id)===String(activeId)))activeId=rows[0]?.id;count.textContent=`${rows.length} 项 · 与事项办理同源`;cases.innerHTML=rows.map(item=>`<button class="case ${String(item.id)===String(activeId)?'active':''}" data-id="${item.id}"><strong>${item.title}</strong><small>${item.id} · ${item.owner||'未记录'}</small><span class="case-footer"><span class="badge ${replyOf(item)==='公开答复'?'green':'gold'}">${replyOf(item)}</span><small>${closedAt(item)}</small></span></button>`).join('');drawDetail(rows.find(item=>String(item.id)===String(activeId)));}
+    filters.addEventListener('submit',event=>{event.preventDefault();render();});cases.addEventListener('click',event=>{const button=event.target.closest('[data-id]');if(!button)return;activeId=button.dataset.id;render();});render();lucide.createIcons();
+  </script>
+</body>
+</html>

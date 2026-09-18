@@ -10,7 +10,9 @@ const state = {
   registeredPhone: '',
   modal: null,
   activePermissionRole: 'content',
-  expandedNavGroup: ['handler', 'leader'].includes(initialRole) ? 0 : null,
+  // Platform users need to see the downstream work queue entry immediately.
+  // The dispatch role keeps its original collapsed navigation behavior.
+  expandedNavGroup: initialRole === 'platform' ? 4 : ['handler', 'leader'].includes(initialRole) ? 0 : null,
   userReviewTab: 'pending',
   contentLedgerTab: '全部',
   postDetailTab: 'content',
@@ -49,8 +51,7 @@ const roleInfo = {
 const handlerNav = [
   ['handler-dashboard', '工作台与任务', 'layout-dashboard'],
   ['handler-handling', '办理反馈', 'clipboard-pen-line'],
-  ['handler-messages', '草稿与通知', 'bell-ring'],
-  ['handler-answers', '已办事项', 'badge-check']
+  ['handler-answers', '已办结事项', 'badge-check']
 ];
 const leaderNav = [
   ['leader-dashboard', '领导驾驶舱', 'chart-spline'],
@@ -63,8 +64,9 @@ const navByRole = {
     ['工作总览', [['dashboard', '运营工作台', 'gauge']]],
     ['领导视图', leaderNav],
     ['数据分析', [['statistics', '数据统计', 'chart-no-axes-combined']]],
-    ['内容管理', [['content-ledger', '信息台账管理', 'notebook-tabs'], ['announcements', '通知公告管理', 'megaphone'], ['policy', '政策与问答', 'book-open-check'], ['banners', '轮播图管理', 'images'], ['echo', '回音壁发布', 'badge-check']]],
-    ['事项办理', [['handler-dispatch', '事项分办', 'git-pull-request-arrow'], ['handler-closure', '公开与归档', 'archive']]],
+    ['内容管理', [['content-ledger', '信息台账管理', 'notebook-tabs'], ['announcements', '通知公告管理', 'megaphone'], ['policy', '政策与问答', 'book-open-check'], ['banners', '轮播图管理', 'images'], ['echo', '回音壁管理', 'badge-check']]],
+    ['承办管理', handlerNav],
+    ['事项办理', [['handler-dispatch', '事项分办', 'git-pull-request-arrow']]],
     ['审核管理', [['content-review', '信息内容审核', 'shield-check'], ['comments', '评论审核', 'message-square'], ['report-review', '举报核查', 'flag-triangle-right'], ['user-review', '用户审核', 'user-round-check']]],
     ['配置管理', [['categories', '栏目管理', 'panels-top-left'], ['sensitive', '敏感词库', 'scan-text'], ['flow-config', '流程配置', 'workflow'], ['base-config', '基础配置', 'shield-check']]],
     ['系统设置', [['users', '用户管理', 'users'], ['organization', '组织架构', 'network'], ['permissions', '角色管理', 'key-round'], ['menu-management', '菜单管理', 'panels-top-left'], ['dictionary-management', '字典管理', 'book-open'], ['logs', '系统日志', 'scroll-text']]],
@@ -72,7 +74,7 @@ const navByRole = {
   content: [
     ['工作总览', [['dashboard', '运营工作台', 'gauge']]],
     ['审核管理', [['content-review', '信息内容审核', 'shield-check'], ['comments', '评论审核', 'message-square'], ['report-review', '举报核查', 'flag-triangle-right']]],
-    ['内容管理', [['content-ledger', '信息台账管理', 'notebook-tabs'], ['announcements', '通知公告管理', 'megaphone'], ['policy', '政策与问答', 'book-open-check'], ['banners', '轮播图管理', 'images'], ['echo', '回音壁发布', 'badge-check']]],
+    ['内容管理', [['content-ledger', '信息台账管理', 'notebook-tabs'], ['announcements', '通知公告管理', 'megaphone'], ['policy', '政策与问答', 'book-open-check'], ['banners', '轮播图管理', 'images'], ['echo', '回音壁管理', 'badge-check']]],
     ['配置管理', [['categories', '栏目管理', 'panels-top-left'], ['sensitive', '敏感词库', 'scan-text']]],
   ],
   dispatch: [
@@ -197,9 +199,9 @@ function renderHandling() {
 }
 
 function renderPermissions() {
-  const permissions = ['运营工作台','帖子审核','评论审核','事项分办','办理管理','整改台账','回音壁发布','用户与组织','角色权限','数据统计','匿名溯源','操作日志','安全运维'];
+  const permissions = ['运营工作台','帖子审核','评论审核','事项分办','办理管理','整改台账','回音壁管理','用户与组织','角色权限','数据统计','匿名溯源','操作日志','安全运维'];
   const role = state.activePermissionRole;
-  const can = { content: ['运营工作台','帖子审核','评论审核','栏目管理','公告管理','政策与问答','回音壁发布'], dispatch: ['运营工作台','事项分办','办理管理','整改台账','回音壁发布','数据统计','操作日志'], platform: permissions, handler: ['运营工作台','办理管理','回音壁发布','数据统计'], leader: ['运营工作台','数据统计','办理管理','回音壁发布'] }[role];
+  const can = { content: ['运营工作台','帖子审核','评论审核','栏目管理','公告管理','政策与问答','回音壁管理'], dispatch: ['运营工作台','事项分办','办理管理','整改台账','回音壁管理','数据统计','操作日志'], platform: permissions, handler: ['运营工作台','办理管理','回音壁管理','数据统计'], leader: ['运营工作台','数据统计','办理管理','回音壁管理'] }[role];
   return `${pageHead('角色与权限','角色决定可执行的业务动作，数据范围决定可见的组织和事项；同一用户可拥有多个角色。', `<button class="btn btn-secondary" onclick="showToast('权限变更已保存至草稿')">${icon('save')}保存配置</button><button class="btn btn-primary" onclick="openModal('role')">${icon('plus')}新建角色</button>`)}<div class="permission-grid"><section class="card card-pad"><div class="card-title">角色列表 <span class="badge">5 个角色</span></div><div class="role-list">${Object.entries(roleInfo).map(([id, info]) => `<button class="role-item ${role === id ? 'active' : ''}" onclick="setState({activePermissionRole:'${id}'})"><span>${info.label}</span><span class="badge">${id === 'platform' ? '全量' : id === 'leader' ? '只读' : '已配置'}</span></button>`).join('')}</div><div class="notice" style="margin-top:16px;margin-bottom:0">${icon('info')}<div><strong>权限模型</strong><p>菜单、操作、数据范围三层同时校验，前端隐藏不作为授权依据。</p></div></div></section><section class="card"><div class="card-title card-pad" style="padding-bottom:0">${roleInfo[role].label} · 操作权限 <span class="badge blue">${can.length} 项已授权</span></div><div class="check-row header"><span>功能模块</span><span>查看</span><span>办理</span><span>管理</span></div>${permissions.map(name => `<div class="check-row"><label>${name}</label><span><input type="checkbox" checked ${can.includes(name) ? '' : 'disabled'}></span><span><input type="checkbox" ${can.includes(name) ? 'checked' : ''}></span><span><input type="checkbox" ${role === 'platform' || (role === 'content' && ['帖子审核','评论审核'].includes(name)) ? 'checked' : ''}></span></div>`).join('')}</section></div>`;
 }
 

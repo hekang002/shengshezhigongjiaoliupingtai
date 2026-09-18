@@ -175,7 +175,7 @@
       data.affairs.unshift({
         id, postId: post.id, title: post.title, sourceType: post.board, publicationMode: derivePublishStatus(post),
         auditStatus: '审核通过', reviewedAt: createdAt, createdAt, owner: '', initialOwner: '', co: '', assigneeId: '', assigneeName: '',
-        deadline: '', priority: '一般', feedback: '公开答复', requirements: '', status: '待分办', assignmentState: '待分办',
+        deadline: '', priority: '一般', feedback: '', requirements: '', status: '待分办', assignmentState: '待分办',
         stage: '', progress: '', draft: '', extension: null, transfer: null, flowSnapshot: post.flowSnapshot || null,
         events: [{ text: `内容审核通过，自动生成待分办事项 ${id}`, at: createdAt }]
       });
@@ -420,7 +420,7 @@
       { id: 'menu-post', parentId: 'menu-review', name: '发帖信息台账管理', icon: 'notebook-tabs', sort: 1, type: '菜单', permission: 'content:ledger:view', path: 'content-ledger', enabled: true, visible: true, createdAt: '2026-09-10 09:00' },
       { id: 'menu-announcements', parentId: 'menu-review', name: '通知公告管理', icon: 'megaphone', sort: 3, type: '菜单', permission: 'content:announcement', path: 'announcements', enabled: true, visible: true, createdAt: '2026-09-14 08:00' },
       { id: 'menu-policy', parentId: 'menu-review', name: '政策与问答', icon: 'book-open-check', sort: 4, type: '菜单', permission: 'content:policy', path: 'policy', enabled: true, visible: true, createdAt: '2026-09-14 08:00' },
-      { id: 'menu-echo', parentId: 'menu-review', name: '回音壁发布', icon: 'badge-check', sort: 5, type: '菜单', permission: 'content:echo', path: 'echo', enabled: true, visible: true, createdAt: '2026-09-14 08:00' },
+      { id: 'menu-echo', parentId: 'menu-review', name: '回音壁管理', icon: 'badge-check', sort: 5, type: '菜单', permission: 'content:echo', path: 'echo', enabled: true, visible: true, createdAt: '2026-09-14 08:00' },
       { id: 'menu-affairs', parentId: null, name: '事项办理', icon: 'clipboard-list', sort: 4, type: '目录', permission: '', path: 'assignments', enabled: true, visible: true, createdAt: '2026-09-10 09:00' },
       { id: 'menu-assign', parentId: 'menu-affairs', name: '事项分办', icon: 'git-branch', sort: 1, type: '菜单', permission: 'affair:assign', path: 'assignments', enabled: true, visible: true, createdAt: '2026-09-10 09:00' },
       { id: 'menu-settings', parentId: null, name: '系统设置', icon: 'settings-2', sort: 9, type: '目录', permission: '', path: 'settings', enabled: true, visible: true, createdAt: '2026-09-10 09:00' },
@@ -640,6 +640,8 @@
         }
         const affairsMenu = raw.menus.find((item) => item.id === 'menu-affairs');
         if (affairsMenu?.name === '事项办理' && affairsMenu.parentId === null && affairsMenu.sort === 3) { affairsMenu.sort = 4; dataChanged = true; }
+        const echoMenu = raw.menus.find((item) => item.id === 'menu-echo');
+        if (echoMenu?.name === '回音壁发布') { echoMenu.name = '回音壁管理'; dataChanged = true; }
         for (const role of raw.roles) {
           if (!Array.isArray(role.permissions) || !role.permissions.includes('内容治理')) continue;
           role.permissions = role.permissions.map((name) => name === '内容治理' ? '内容管理' : name);

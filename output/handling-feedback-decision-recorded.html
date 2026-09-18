@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>方案 A 已确认</title>
+  <link rel="icon" href="data:,">
+  <style>
+    :root { --red:#bd2730; --ink:#202326; --muted:#6d7276; --line:#ddd9d2; --paper:#f6f5f1; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; display:grid; place-items:center; padding:24px; color:var(--ink); background:var(--paper); font-family:"Noto Sans SC","Microsoft YaHei",sans-serif; letter-spacing:0; }
+    main { width:min(680px,100%); border-top:4px solid var(--red); background:white; box-shadow:0 18px 50px rgba(32,35,38,.08); }
+    header { padding:30px 34px 22px; border-bottom:1px solid var(--line); }
+    small { color:var(--red); font-weight:800; }
+    h1 { margin:8px 0 9px; font-family:"Songti SC",serif; font-size:34px; font-weight:500; }
+    p { margin:0; color:var(--muted); line-height:1.7; }
+    ol { margin:0; padding:26px 34px 30px; list-style:none; counter-reset:step; }
+    li { counter-increment:step; display:grid; grid-template-columns:34px 1fr; gap:13px; align-items:start; padding:15px 0; border-bottom:1px solid #ece9e4; }
+    li:last-child { border-bottom:0; }
+    li::before { content:counter(step); width:28px; height:28px; display:grid; place-items:center; color:white; background:var(--red); font:700 13px Georgia,serif; }
+    li strong { display:block; margin-bottom:4px; }
+    li span { color:var(--muted); font-size:14px; }
+  </style>
+</head>
+<body>
+  <main>
+    <header><small>承办管理优化</small><h1>方案 A 已确认</h1><p>工作台负责发现和选择任务，办理反馈负责执行和提交。对比稿已结束，等待进入原型实施。</p></header>
+    <ol><li><div><strong>工作台与任务</strong><span>数据概览、风险预警、查询筛选和任务入口。</span></div></li><li><div><strong>办理反馈</strong><span>办理队列、当前事项表单、分办要求和流转记录。</span></div></li><li><div><strong>统一事项数据</strong><span>保存进展或提交答复后，两侧状态和动态同步更新。</span></div></li></ol>
+  </main>
+</body>
+</html>
